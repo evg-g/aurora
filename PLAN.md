@@ -7,8 +7,8 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 5 — property-based + security test suites, coverage + mutation gates in CI**
-(in `appointments-api`).
+**Next milestone: 6 — backend CI/CD complete: build, scan, sign, deploy, smoke, nightly**
+(in `appointments-api`). Milestones 1–5 are done and committed.
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -20,7 +20,7 @@ Context for a fresh session:
   Full details in memory `aurora-build-environment`.
 - Tools ready: uv, Node 20 (nvm), Python 3.12, Docker (from WSL, `postgres:16` + `redis:7` images
   pulled), make/gcc, git identity `evgmongo-maker`. sudo needs a password (hand to the user).
-- Milestones 1–4 are done and committed. API working tree clean. Backed up to private GitHub repos
+- Milestones 1–5 are done and committed. API working tree clean. Backed up to private GitHub repos
   under personal account `evg-g` (remotes set; `~/.gh_personal` holds the push token).
 - Backups: the three code repos push to `evg-g/<name>`. This PLAN.md and the top-level docs are
   tracked in a 4th private repo **`evg-g/aurora`** (a git repo rooted at `~/aurora/` that ignores
@@ -55,13 +55,27 @@ exponential backoff + jitter, dead-letter after max attempts) runnable in-proces
 admin-only subscription CRUD router, `fakeredis` + `respx` dev deps. ADRs 0007–0010. Verified:
 ruff + mypy --strict clean (95 files), 83 unit + 36 integration green.
 
-What milestone 5 must deliver (from spec §5): property-based tests (Schemathesis over the OpenAPI
-spec; hypothesis for slot-computation invariants), a security tier (authz matrix, JWT tampering,
-injection-shaped inputs, mass-assignment), and coverage (≥90% line / ≥85% branch on services/ + api/)
-plus a mutation-testing baseline (`mutmut`), wired into `make ci-local` / CI as enforced gates.
+What milestone 5 delivered (done): property tier (`tests/property/`) — `hypothesis` slot invariants +
+Schemathesis fuzzing every OpenAPI op (no 500s / schema conformance, authenticated); security tier
+(`tests/security/`) — authz matrix (every role × endpoint), JWT tampering, injection-shaped inputs,
+mass-assignment. Coverage gate `scripts/check_coverage.py` (line ≥90% / branch ≥85% on services/+api/,
+combined over all tiers; `concurrency=["greenlet"]` so async handlers are attributed) — actual 96.6% /
+92.4%. Mutation gate `scripts/check_mutation.py` on services/ via unit runner — baseline 421 killed /
+94 survived / 126 no-tests / 1 timeout (kill rate ≈81.6% over tested; gate ≥78%). `docs/TESTING.md`
+(mock/stub/fake/spy taxonomy + why integration uses no doubles + why coverage is weak), READMEs per
+tier, ADR 0011. New dev deps: hypothesis, schemathesis, mutmut, pytest-mock. Extra functional
+integration tests added to close the routers to the gate. CI: `coverage` job per-PR, `mutation` job
+nightly + workflow_dispatch. `make ci-local` = lint + typecheck + coverage gate. Verified: ruff +
+mypy --strict clean (112 files), 88 unit + property + security + integration = 281 tests green,
+coverage + mutation gates green.
+
+What milestone 6 must deliver (from spec §6): backend CI/CD complete — multi-stage build, image scan,
+sign, deploy to Azure Container Apps (every credential-dependent job skips cleanly with no secrets),
+smoke test, and the nightly job (flake re-run, mutation — already wired, load smoke, dependency
+freshness).
 
 First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, recall memory
-`aurora-build-environment`, then start milestone 5. Docker must be running for integration tests.
+`aurora-build-environment`, then start milestone 6. Docker must be running for integration tests.
 
 ## Repos
 
@@ -76,7 +90,7 @@ First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, r
 - [x] 2. API domain core: models, migrations, exclusion constraint, services, unit tests.
 - [x] 3. API surface: auth, RBAC, CRUD, availability, problem+json, pagination; integration tests with testcontainers.
 - [x] 4. API advanced semantics: idempotency, ETag/If-Match, rate limiting, webhooks + worker; tests for each.
-- [ ] 5. Property-based and security test suites; coverage and mutation gates wired into CI.
+- [x] 5. Property-based and security test suites; coverage and mutation gates wired into CI.
 - [ ] 6. Backend CI/CD complete: build, scan, sign, deploy, smoke, nightly.
 - [ ] 7. Contract publication + `oasdiff` gate.
 - [ ] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
@@ -152,3 +166,35 @@ First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, r
   - Deviation: webhook emission is not transactional with the DB commit (at-least-once delivery;
     receivers dedupe on `X-Webhook-Id`); a transactional outbox is the documented follow-up
     (`docs/KNOWN_GAPS.md`, ADR 0010).
+- 2026-09-27: Milestone 5 complete (`appointments-api`). Property + security tiers and the quality
+  gates built and verified:
+  - Property tier `tests/property/`: `hypothesis` invariants for slot computation (duration, ordering,
+    past-filter, blackout-monotonicity, cross-check with `fits_working_hours`, across DST timezones);
+    Schemathesis fuzzes every OpenAPI operation for no-500 + response-schema conformance, authenticated
+    as a platform admin. The fuzzed app gets a per-call resource lifespan (create+dispose engine/Redis
+    each `TestClient` cycle) so async calls don't cross event loops; OpenAPI 3.1 enabled in Schemathesis.
+  - Security tier `tests/security/`: data-driven authz matrix (every role × endpoint: 401/403/allowed),
+    JWT tampering (forged sig, `alg:none`, wrong secret, expired, refresh-as-access, inflated-role that
+    can't escalate since RBAC reads role from DB), injection-shaped inputs (stored literally / clean
+    4xx / DB intact), mass-assignment (smuggled id/status/version/is_active ignored; no patient-id spoof).
+  - Coverage gate `scripts/check_coverage.py`: line ≥90% / branch ≥85% on services/+api/ over all tiers
+    combined. Needed `concurrency=["greenlet"]` in coverage config — SQLAlchemy async runs handlers over
+    greenlet switches and coverage otherwise mis-attributes router lines (looked like 52% branch; real
+    92%). Actual: 96.6% line / 92.4% branch.
+  - Mutation gate `scripts/check_mutation.py`: `mutmut` on services/ via the unit runner. Baseline 421
+    killed / 94 survived / 126 no-tests / 1 timeout of 642; kill rate ≈81.6% over tested mutants; gate
+    ≥78%. `only_mutate` scopes mutation to services/ while copying the whole package so imports resolve.
+  - Docs: `docs/TESTING.md` (mock/stub/fake/spy with repo examples, why integration uses no doubles,
+    why coverage alone is weak), README per test tier, ADR 0011. Added the missing `spy` demonstration
+    (`mocker.spy`, pytest-mock) proving no N+1 in availability.
+  - Added functional integration tests (`test_appointments_flows`, `test_catalog`, `test_auth_flows`,
+    `test_webhooks_api`, `test_appointments_idempotency`) to bring the routers up to the coverage gate.
+  - CI: `coverage` job per-PR (Docker on the runner → testcontainers), `mutation` job nightly +
+    workflow_dispatch. `make ci-local` = lint + typecheck + coverage. New Make targets test-property,
+    test-security, coverage, mutation.
+  - Verified green: ruff + ruff format --check + mypy --strict (112 files); 281 tests (88 unit +
+    integration + security + property); coverage gate OK; mutation gate OK. New dev deps: hypothesis,
+    schemathesis, mutmut, pytest-mock.
+  - Deviation: mutation runs nightly/on-demand rather than per-PR (a full run is heavy); this matches
+    the spec's own nightly-mutation split (§6). ~126 services mutants have "no tests" under the unit
+    runner (webhook delivery I/O paths, covered by the integration tier) and are excluded from the score.
