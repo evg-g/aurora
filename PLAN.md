@@ -7,16 +7,41 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 10 — telemetry ingestion in the API** (work moves back to `appointments-api`):
-MQTT worker + HTTP batch endpoint, idempotency by `(device_id, sequence)`, out-of-order and backfill
-handling, clock-skew rules, the server-side excursion engine that must agree with the device on a
-shared fixture set, an SSE stream, and the published telemetry contract. Note: the telemetry contract
-(AsyncAPI 3 + JSON Schema, §8.4) is *owned by the device repo* (`aurora-sensor-agent/contracts/`) and
-vendored by the API — decide in that session where each half lands. The device excursion machine and
-its shared fixtures (`aurora-sensor-agent/tests/fixtures/excursions/cases.json`) are the contract the
-server engine is held to.
-Milestones 1–9 are done and committed. Milestone 9 was the last of the device *behaviour* work; the
-device SIL + CI/CD is milestone 11.
+**Next milestone: 11 — device SIL + CI/CD** (work is in `aurora-sensor-agent`): the agent vs
+Mosquitto + API in testcontainers, a fleet simulator, matrix CI, packaging (wheel + .deb/gateway
+image), a signed OTA update manifest the agent verifies, a staged rollout (canary → 10% → fleet) with
+auto-halt on rising error rate, nightly soak, and the `hil` job gated off. Also wire the device-side
+telemetry-contract self-test + drift gate into the device CI (the API half is done — see below).
+Milestones 1–10 are done and committed.
+
+What milestone 10 delivered (done, in `appointments-api`): telemetry ingestion end-to-end.
+- Models + migration 0003: `Device` (per-device Argon2 secret, status), `TelemetryReading`
+  (`(device_id, sequence)` unique = idempotency key; **BRIN** index on `measured_at`; no TimescaleDB),
+  `ThresholdPolicy` (device- or clinic-scoped band), `Excursion` (keyed `(device_id, started_at)`).
+- Ingestion service (`services/telemetry/ingestion.py`, pure, Protocol seams): idempotent
+  (`INSERT ... ON CONFLICT DO NOTHING`), order-independent (re-derives excursions from `measured_at`
+  after every batch, so a late backfill still alarms), clock-skew (flag past skew / reject future).
+  One service; HTTP endpoint and MQTT worker both build it via `telemetry_wiring`.
+- Server excursion engine (`services/telemetry/excursion.py`) is a faithful port of the device's;
+  proved equal on the shared fixtures (vendored `tests/fixtures/excursions/cases.json`).
+- API: device provisioning + credential rotation, `POST /devices/{id}/telemetry:batch` (per-item
+  result array, X-Device-Secret auth), time-series `?bucket=&agg=` (date_bin), device health,
+  excursion list/acknowledge, SSE `/streams/telemetry` (Redis Stream, Last-Event-ID resume).
+- MQTT worker (`workers/telemetry_mqtt.py`, `python -m ...`, aiomqtt) — the primary path.
+- Telemetry contract: **the device repo now owns** `aurora-sensor-agent/contracts/telemetry.schema.json`
+  + `telemetry.asyncapi.yaml`; the API vendors them into `appointments_api/contracts/telemetry/`,
+  validates every inbound message (jsonschema), accepts version N and N-1, and gates drift with
+  `scripts/check_telemetry_contract.py` (checksum guard + cross-repo byte compare) — the OpenAPI gate
+  in reverse. Docs: `docs/TELEMETRY.md` (Mermaid data path + retention/downsampling), ADR 0014,
+  `CONTRACT_WORKFLOW.md` telemetry section. Retention job `scripts/retention.py` (`make retention`).
+- Verified: ruff + mypy --strict (139 files) clean; unit+contract 114, integration 95, plus property
+  (SSE op skipped — unbounded stream) + security (authz matrix extended); coverage gate 95.14% line /
+  86.30% branch on services/+api/; OpenAPI + telemetry drift gates green. New deps: jsonschema,
+  aiomqtt (runtime), types-jsonschema (dev).
+- Deviations (see `docs/KNOWN_GAPS.md`): full-series excursion re-derivation per batch (bounded-window
+  is the follow-up); SSE uses bearer auth (EventSource needs cookie/token — milestone 12); future
+  reading is a per-item `rejected` rather than a top-level 422 (bulk endpoint); device-side contract
+  self-test + drift gate deferred to milestone 11.
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -103,13 +128,14 @@ ADR 0013. Verified: ruff + mypy --strict (114 files) clean, 89 unit+contract tes
 exit 0 on identical / exit 1 on a removed path. Web-side drift check is milestone 12; telemetry
 AsyncAPI contract is milestone 10.
 
-First actions on resume: read this PLAN.md, then work in **`appointments-api`** for milestone 10 —
-read its `CLAUDE.md`, recall memory `aurora-build-environment`. (Milestone 10 needs Docker again:
-testcontainers for Postgres/Redis, and a Mosquitto broker for the MQTT path.) The device side is done
-through milestone 9: the excursion state machine, calibration + median filter, the SQLite
-store-and-forward buffer, batching + backoff, the GPIO and serial tiers, the full fault catalogue, the
-agent run loop, and the seven-day soak test. `make ci-local` green: ruff + mypy --strict clean, 173
-tests + 5 hardware-skipped, 97% coverage.
+First actions on resume: read this PLAN.md, then work in **`aurora-sensor-agent`** for milestone 11 —
+read its `CLAUDE.md`, recall memory `aurora-build-environment`. Milestone 11 (device SIL + CI/CD)
+needs Docker: testcontainers running Mosquitto + the API so the agent's MQTT publish path is exercised
+end-to-end against the milestone-10 ingestion. The device owns the telemetry contract at
+`aurora-sensor-agent/contracts/` (schema + AsyncAPI, added in milestone 10); wire its self-test +
+drift gate into the device CI. The API side of telemetry ingestion is complete and green (see the
+milestone-10 summary above); `appointments-api` `make ci-local` + the OpenAPI/telemetry contract gates
+all pass.
 
 ## Repos
 
@@ -129,7 +155,7 @@ tests + 5 hardware-skipped, 97% coverage.
 - [x] 7. Contract publication + `oasdiff` gate.
 - [x] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
 - [x] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
-- [ ] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
+- [x] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
 - [ ] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
 - [ ] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
 - [ ] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
@@ -299,3 +325,32 @@ tests + 5 hardware-skipped, 97% coverage.
     5 hardware-skipped; 97% total coverage (`real/i2c.py` 42% is the unavoidable on-device path).
   - Deviation: none from the milestone-9 scope. The MQTT/HTTP transports are milestone 10-11 (no
     network yet, as planned), so `Transport` ships as a seam + in-memory fake this milestone.
+- 2026-09-27: Milestone 10 complete (`appointments-api`). Telemetry ingestion built and verified:
+  - Models + Alembic 0003: `Device` (per-device Argon2 secret + status lifecycle), `TelemetryReading`
+    (`(device_id, sequence)` unique idempotency key, **BRIN** on `measured_at`, no TimescaleDB),
+    `ThresholdPolicy` (device- or clinic-scoped, exactly-one-scope check), `Excursion` (keyed
+    `(device_id, started_at)`, preserves acknowledgement across re-derivation). New enums
+    `DeviceStatus`, `ExcursionDirection` (values `low`/`high` via `values_callable`).
+  - `services/telemetry/ingestion.py` — one pure service over Protocol seams for BOTH transports:
+    idempotent (`INSERT ... ON CONFLICT DO NOTHING`, concurrent-race-safe), order-independent (full
+    excursion re-derivation from `measured_at` after each batch, so a late backfill still alarms),
+    clock-skew (flag past-skew, reject future). `services/telemetry/excursion.py` is a faithful port
+    of the device engine, proved equal on the vendored shared fixtures.
+  - API routers: device provisioning + credential rotation, `POST /devices/{id}/telemetry:batch`
+    (per-item result array, `X-Device-Secret` auth), time-series `?bucket=&agg=` (`date_bin`), device
+    health, excursion list + `:acknowledge`, threshold-policy create, and SSE `/streams/telemetry`
+    (Redis Stream, `Last-Event-ID` resume). MQTT worker `workers/telemetry_mqtt.py` (aiomqtt) is the
+    primary path; `telemetry_wiring.py` is the shared composition root.
+  - Telemetry contract now OWNED by the device repo: `aurora-sensor-agent/contracts/telemetry.schema.json`
+    + `telemetry.asyncapi.yaml`, vendored byte-identical into `appointments_api/contracts/telemetry/`,
+    validated on every inbound message, N/N-1 versioned, drift-gated by
+    `scripts/check_telemetry_contract.py` (checksum + cross-repo compare) — the OpenAPI gate reversed.
+    Docs: `docs/TELEMETRY.md` (Mermaid data path, retention/downsampling), ADR 0014, CONTRACT_WORKFLOW
+    telemetry section, ERROR_CATALOG + KNOWN_GAPS updates. Retention job `scripts/retention.py`.
+  - New deps: `jsonschema`, `aiomqtt` (runtime), `types-jsonschema` (dev). CI `contract` job gained a
+    telemetry drift step. Verified green: ruff + ruff format + mypy --strict (139 files); unit+contract
+    114, integration 95, property (SSE op skipped) + security (authz matrix extended); coverage gate
+    95.14% line / 86.30% branch on services/+api/; OpenAPI + telemetry drift gates pass.
+  - Deviations (docs/KNOWN_GAPS.md): full-series re-derivation per batch (bounded window is the
+    follow-up); SSE bearer auth (EventSource transport is milestone 12); future reading is a per-item
+    `rejected`, not a top-level 422 (bulk endpoint); device-side contract self-test is milestone 11.
