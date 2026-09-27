@@ -77,7 +77,8 @@ Update this section as you go, so any future session (or account) knows the stat
 - [x] Milestone 1 — scaffolding, three repos, CI skeleton
 - [~] Milestone 2–7 — API: domain, surface, advanced semantics, tests, CI/CD, contract
       (2 done: domain core; 3 done: API surface — auth+RBAC+CRUD+availability, problem+json,
-      cursor pagination, 20 integration tests on testcontainers)
+      cursor pagination, 20 integration tests on testcontainers; 4 done: idempotency, ETag/If-Match,
+      rate limiting, signed webhooks + retrying worker — 83 unit + 36 integration green)
 - [ ] Milestone 8–11 — device: drivers, behaviour, ingestion, SIL + CI/CD
 - [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD
 - [ ] Milestone 16 — docs, exercises, diagrams, polish

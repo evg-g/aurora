@@ -7,7 +7,8 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 4 — API advanced semantics** (in `appointments-api`).
+**Next milestone: 5 — property-based + security test suites, coverage + mutation gates in CI**
+(in `appointments-api`).
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -19,7 +20,7 @@ Context for a fresh session:
   Full details in memory `aurora-build-environment`.
 - Tools ready: uv, Node 20 (nvm), Python 3.12, Docker (from WSL, `postgres:16` + `redis:7` images
   pulled), make/gcc, git identity `evgmongo-maker`. sudo needs a password (hand to the user).
-- Milestones 1–3 are done and committed. API working tree clean. Backed up to private GitHub repos
+- Milestones 1–4 are done and committed. API working tree clean. Backed up to private GitHub repos
   under personal account `evg-g` (remotes set; `~/.gh_personal` holds the push token).
 - Backups: the three code repos push to `evg-g/<name>`. This PLAN.md and the top-level docs are
   tracked in a 4th private repo **`evg-g/aurora`** (a git repo rooted at `~/aurora/` that ignores
@@ -43,13 +44,24 @@ What milestone 3 delivered (done):
   pytest-xdist. `make ci-local` green (ruff, mypy --strict on 62 files, unit); `make test-integration`
   green (needs Docker).
 
-What milestone 4 must deliver (from spec §4, §5, §12): Idempotency-Key on create, ETag/If-Match
-optimistic concurrency (the `version` column → 412 on stale writes), per-principal rate limiting
-(`429` + `Retry-After`), and signed webhooks (HMAC-SHA256) delivered by a background worker with
-retry/backoff — each with tests (fakeredis at unit level, real Redis at integration).
+What milestone 4 delivered (done): Idempotency-Key on create (Redis SET NX + fingerprint; replay /
+409 in-progress / 422 key-reused / release-on-failure); ETag/If-Match optimistic concurrency
+(strong ETag from `version`; 428 missing, 412 stale; StaleDataError → 412); per-principal rate
+limiting (fixed window in Redis, middleware, `RateLimit-*` + `429`/`Retry-After`, fail-open, health
+exempt); signed webhooks (HMAC-SHA256 + signed timestamp) published on state changes to a Redis
+event queue, delivered by a background worker (fan-out to `WebhookSubscription` rows, retry with
+exponential backoff + jitter, dead-letter after max attempts) runnable in-process or via
+`python -m appointments_api.workers.webhooks`. New: migration 0002 (webhook_subscriptions),
+admin-only subscription CRUD router, `fakeredis` + `respx` dev deps. ADRs 0007–0010. Verified:
+ruff + mypy --strict clean (95 files), 83 unit + 36 integration green.
+
+What milestone 5 must deliver (from spec §5): property-based tests (Schemathesis over the OpenAPI
+spec; hypothesis for slot-computation invariants), a security tier (authz matrix, JWT tampering,
+injection-shaped inputs, mass-assignment), and coverage (≥90% line / ≥85% branch on services/ + api/)
+plus a mutation-testing baseline (`mutmut`), wired into `make ci-local` / CI as enforced gates.
 
 First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, recall memory
-`aurora-build-environment`, then start milestone 4. Docker must be running for integration tests.
+`aurora-build-environment`, then start milestone 5. Docker must be running for integration tests.
 
 ## Repos
 
@@ -63,7 +75,7 @@ First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, r
 - [x] 1. Scaffolding: all three repos, git init, tooling configs, Makefiles, compose, CI skeleton that already passes.
 - [x] 2. API domain core: models, migrations, exclusion constraint, services, unit tests.
 - [x] 3. API surface: auth, RBAC, CRUD, availability, problem+json, pagination; integration tests with testcontainers.
-- [ ] 4. API advanced semantics: idempotency, ETag/If-Match, rate limiting, webhooks + worker; tests for each.
+- [x] 4. API advanced semantics: idempotency, ETag/If-Match, rate limiting, webhooks + worker; tests for each.
 - [ ] 5. Property-based and security test suites; coverage and mutation gates wired into CI.
 - [ ] 6. Backend CI/CD complete: build, scan, sign, deploy, smoke, nightly.
 - [ ] 7. Contract publication + `oasdiff` gate.
@@ -117,3 +129,26 @@ First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, r
     polyfactory, pytest-xdist. `postgres:16` + `redis:7` images pulled.
   - Deviation: CLINIC_ADMIN clinic-scoping deferred (no admin↔clinic link in the model yet);
     documented in `docs/KNOWN_GAPS.md`. Idempotency/ETag/rate-limit/webhooks are milestone 4.
+- 2026-09-27: Milestone 4 complete (`appointments-api`). API advanced semantics built and verified:
+  - Idempotency-Key on `POST /appointments`: Redis SET NX claim + request fingerprint; replay of the
+    original 201 (`Idempotency-Replayed: true`), 409 while in progress, 422 on key-reuse-with-different-body,
+    release-on-failure. `services/idempotency.py` + `repositories/redis_idempotency.py`.
+  - ETag/If-Match: strong ETag from `version` on every appointment response; transition/cancel require
+    If-Match (428 missing, 412 stale); `StaleDataError` mapped to 412. `api/conditional.py`.
+  - Rate limiting: fixed-window per principal (token sub or IP) in Redis, HTTP middleware, `RateLimit-*`
+    headers + 429/`Retry-After`, fail-open, health/docs exempt. `services/rate_limit.py` +
+    `repositories/redis_rate_limit.py` + `api/middleware.py`.
+  - Webhooks: state changes publish an event (dispatcher → Redis list); a worker fans out to
+    `WebhookSubscription` rows, signs with HMAC-SHA256 (+ signed timestamp), retries with exponential
+    backoff + jitter, dead-letters after max attempts. Runnable in-process (off by default) or
+    `python -m appointments_api.workers.webhooks`. Model + migration 0002 + admin-only CRUD router +
+    `services/webhooks/*` + `repositories/redis_webhooks.py` + `repositories/webhooks.py`.
+  - Tests: unit demonstrate fakeredis (idempotency, rate limit), respx (sender), AsyncMock interaction
+    (dispatcher), fakes + fixed clock (worker); integration on real Redis for all four features
+    (idempotency replay/reuse, 428/412 ETag flow, 429 + headers, webhook enqueue/deliver/retry/dead-letter,
+    subscription CRUD authz). ADRs 0007 (idempotency), 0008 (ETag), 0009 (rate limit), 0010 (webhooks).
+  - Verified green: ruff, ruff format --check, mypy --strict (95 files), 83 unit, 36 integration.
+    New deps: dev `fakeredis`, `respx`. `make ci-local` green.
+  - Deviation: webhook emission is not transactional with the DB commit (at-least-once delivery;
+    receivers dedupe on `X-Webhook-Id`); a transactional outbox is the documented follow-up
+    (`docs/KNOWN_GAPS.md`, ADR 0010).
