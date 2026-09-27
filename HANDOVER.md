@@ -86,8 +86,13 @@ Update this section as you go, so any future session (or account) knows the stat
 - [x] Milestone 8 — device foundation: six Protocol seams, SHT4x register-level driver + CRC,
       real/sim/replay I²C buses, seeded fridge simulator with fault injection, driver-contract
       suite. 78 tests + 5 hardware-skipped, ruff + mypy --strict clean, 95% coverage. ADR 0002.
-- [ ] Milestone 9–11 — device: behaviour (excursion machine, buffer, GPIO/serial, faults, soak),
-      ingestion (API MQTT/HTTP), SIL + CI/CD
+- [x] Milestone 9 — device behaviour: excursion state machine, calibration + median filter,
+      SQLite store-and-forward buffer (bounded), batching + backoff, GPIO (gpiozero MockFactory) and
+      serial (pyserial loop://+pty) tiers, full fault catalogue (NaN/disk-full/clock-jump), agent run
+      loop, seven-day soak (fake clock + tracemalloc, DST crossing). 173 tests + 5 hardware-skipped,
+      ruff + mypy --strict clean, 97% coverage. ADRs 0003–0004.
+- [ ] Milestone 10–11 — device/API: ingestion (API MQTT/HTTP, server excursion engine, SSE,
+      telemetry contract), SIL + CI/CD
 - [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD
 - [ ] Milestone 16 — docs, exercises, diagrams, polish
 

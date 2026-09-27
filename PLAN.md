@@ -7,11 +7,16 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 9 — device behaviour** (in `aurora-sensor-agent`): excursion state machine,
-median filter, SQLite store-and-forward buffer, batching, backoff, the GPIO and serial tiers, the
-full fault-injection catalogue (incl. the buffer/clock faults: NaN, disk full, clock jump), and soak
-tests with a fake clock. No network yet (SIL is milestone 11).
-Milestones 1–8 are done and committed. Work continues in the `aurora-sensor-agent` repo.
+**Next milestone: 10 — telemetry ingestion in the API** (work moves back to `appointments-api`):
+MQTT worker + HTTP batch endpoint, idempotency by `(device_id, sequence)`, out-of-order and backfill
+handling, clock-skew rules, the server-side excursion engine that must agree with the device on a
+shared fixture set, an SSE stream, and the published telemetry contract. Note: the telemetry contract
+(AsyncAPI 3 + JSON Schema, §8.4) is *owned by the device repo* (`aurora-sensor-agent/contracts/`) and
+vendored by the API — decide in that session where each half lands. The device excursion machine and
+its shared fixtures (`aurora-sensor-agent/tests/fixtures/excursions/cases.json`) are the contract the
+server engine is held to.
+Milestones 1–9 are done and committed. Milestone 9 was the last of the device *behaviour* work; the
+device SIL + CI/CD is milestone 11.
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -98,12 +103,13 @@ ADR 0013. Verified: ruff + mypy --strict (114 files) clean, 89 unit+contract tes
 exit 0 on identical / exit 1 on a removed path. Web-side drift check is milestone 12; telemetry
 AsyncAPI contract is milestone 10.
 
-First actions on resume: read this PLAN.md, then work in **`aurora-sensor-agent`** — read its
-`CLAUDE.md`, recall memory `aurora-build-environment`, then start milestone 9. (Milestones 9–11 are the
-device repo; Docker only needed later for SIL.) Milestone 8 built the sensor foundation: six
-`Protocol` seams (`protocols.py`), the SHT4x register-level driver (`drivers/sht4x.py`), the `real`/
-`sim`/`replay` I²C buses, the seeded fridge simulator with fault injection, and the driver-contract
-suite. `make ci-local` green: ruff + mypy --strict clean, 78 tests + 5 hardware-skipped, 95% coverage.
+First actions on resume: read this PLAN.md, then work in **`appointments-api`** for milestone 10 —
+read its `CLAUDE.md`, recall memory `aurora-build-environment`. (Milestone 10 needs Docker again:
+testcontainers for Postgres/Redis, and a Mosquitto broker for the MQTT path.) The device side is done
+through milestone 9: the excursion state machine, calibration + median filter, the SQLite
+store-and-forward buffer, batching + backoff, the GPIO and serial tiers, the full fault catalogue, the
+agent run loop, and the seven-day soak test. `make ci-local` green: ruff + mypy --strict clean, 173
+tests + 5 hardware-skipped, 97% coverage.
 
 ## Repos
 
@@ -122,7 +128,7 @@ suite. `make ci-local` green: ruff + mypy --strict clean, 78 tests + 5 hardware-
 - [x] 6. Backend CI/CD complete: build, scan, sign, deploy, smoke, nightly.
 - [x] 7. Contract publication + `oasdiff` gate.
 - [x] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
-- [ ] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
+- [x] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
 - [ ] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
 - [ ] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
 - [ ] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
@@ -257,3 +263,39 @@ suite. `make ci-local` green: ruff + mypy --strict clean, 78 tests + 5 hardware-
   - Deviation: the higher-layer faults from spec §7 (NaN in the pipeline, disk full, clock jump) are
     buffer/clock-seam faults, not chip/bus faults; they land with the buffer + fault tier in
     milestone 9. Recorded in ADR 0002.
+- 2026-09-27: Milestone 9 complete (`aurora-sensor-agent`). Device behaviour built and verified —
+  no network, no Docker, no hardware needed:
+  - Pure logic layer (`logic/`, zero I/O, injected `Clock`): the **excursion state machine**
+    (`excursion.py`, NORMAL→PENDING→EXCURSION→CLEARING; dwell/recovery; short-spike-no-alarm;
+    no-flapping; peak tracking; backward-clock guard; a `detect_excursions` series runner driven by a
+    **shared fixture set** `tests/fixtures/excursions/cases.json` that the server engine will be held
+    to in milestone 10); calibration + **median-of-N** filter with a NaN/inf guard (`filter.py`);
+    exponential **backoff with full jitter** (`backoff.py`); **batch splitting** with a stable
+    per-batch idempotency key (`batch.py`); and the LED/buzzer **indicator** mapping (`indicator.py`).
+  - **SQLite store-and-forward buffer** (`buffer/sqlite.py`, ADR 0004): write-before-send, bounded
+    ring-buffer eviction (oldest dropped when full), row id = device `sequence` via AUTOINCREMENT,
+    survives close/reopen.
+  - **Serial tier**: legacy UART probe (`drivers/legacy_probe.py`) — a pure `FrameParser` (NMEA-style
+    `$T=..,H=..*CS`, resync past garbage/corrupt frames, checksum count) + `LegacyProbe` I/O; real
+    port via `pyserial` (`real/serial.py`), tested over `loop://` and a `pty` pair.
+  - **GPIO tier**: `real/gpio.py` over `gpiozero`, tested through its `MockFactory` (no hardware).
+  - **Higher-layer fault catalogue** (`sim/pipeline_faults.py`, `tests/faults/`): NaN (rejected),
+    disk full (flagged, no crash, no loss of buffered data, still drains), clock jump (no spurious
+    excursion, skew flagged); guarantee proven: no fault loses buffered data or duplicates on the
+    server (retried batch reuses its idempotency key). A guard test fails if a fault is added without
+    a test.
+  - **Agent run loop** (`agent.py`): skew-check → sample → calibrate/filter → excursion → indicator →
+    buffer → drain (batch + publish + backoff), with a `HealthBeacon`. Transport is still a seam; an
+    in-memory transport (`transport/memory.py`) backs the loop and soak. `serde.py` owns the reading
+    wire format.
+  - **Soak tier** (`tests/soak/`): seven simulated days in <1 s on a `FakeClock` — tracemalloc shows
+    no memory creep, the buffer stays bounded across a two-day outage then drains, and it crosses an
+    EU DST boundary. `make soak` runs it; `make run` / `aurora-agent run` runs the loop against the sim.
+  - New dev deps: `pyserial`, `gpiozero` (+ `colorzero`); mypy overrides mark both untyped. New ADRs
+    0003 (excursion machine + injected clock) and 0004 (buffer + batching). `docs/HARDWARE_TESTING.md`
+    extended; per-tier READMEs added. CI `test` job (already `pytest tests` over 3.12/3.13) now covers
+    all new tiers.
+  - Verified green: ruff + ruff format --check + mypy --strict (73 files) clean; 173 tests passed,
+    5 hardware-skipped; 97% total coverage (`real/i2c.py` 42% is the unavoidable on-device path).
+  - Deviation: none from the milestone-9 scope. The MQTT/HTTP transports are milestone 10-11 (no
+    network yet, as planned), so `Transport` ships as a seam + in-memory fake this milestone.
