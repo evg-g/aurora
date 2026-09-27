@@ -1,0 +1,10 @@
+# The three products are their own git repositories, backed up separately.
+appointments-api/
+appointments-web/
+aurora-sensor-agent/
+
+# Local-only artifacts
+*.log
+*.sh
+.venv/
+__pycache__/
