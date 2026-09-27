@@ -3,14 +3,47 @@
 This restores the whole Aurora project from the private GitHub backups and lets you pick up at the
 next milestone. Everything is under the personal account **evg-g**.
 
-## 0. Prerequisites (not in git — reinstall these)
+## 0. Prerequisites — install the toolchain (not in git)
 
-- **WSL2 Ubuntu-24.04** (work inside the Linux filesystem `~/`, NOT `/mnt/c` or OneDrive — Docker
-  and testcontainers need it).
-- Install: **uv**, **Node LTS via nvm** (Node 20), **Python 3.12**, **Docker Desktop** with WSL
-  integration, **git**, and `build-essential` (make/gcc). Versions: matching majors are enough —
-  `uv.lock` and `package-lock.json` pin the actual dependencies.
-- Set your git identity: `git config --global user.name "…"; git config --global user.email "…"`.
+Work inside the WSL2 Linux filesystem (`~/`), never `/mnt/c` or OneDrive — Docker and
+testcontainers need it. Matching major versions are enough (Python 3.12, Node 20); `uv.lock` and
+`package-lock.json` pin the actual dependencies.
+
+**On Windows (PowerShell, once):**
+
+```powershell
+wsl --install -d Ubuntu-24.04
+```
+
+Then install **Docker Desktop for Windows** and turn on
+**Settings → Resources → WSL integration → Ubuntu-24.04**.
+
+**Inside Ubuntu-24.04 (bash):**
+
+```bash
+# make/gcc, git, curl
+sudo apt update && sudo apt install -y build-essential git curl
+
+# uv (Python package + venv manager) -> installs into ~/.local/bin
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc                       # or open a new shell, so ~/.local/bin is on PATH
+
+# Python 3.12 (uv manages it; system Ubuntu-24.04 also ships 3.12)
+uv python install 3.12
+
+# Node 20 via nvm (check github.com/nvm-sh/nvm for the current install line)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc
+nvm install 20 && nvm alias default 20
+
+# git identity
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+
+# verify everything is present
+uv --version && node --version && python3 --version && git --version \
+  && make --version && docker info | head -1
+```
 
 ## 1. Authenticate to GitHub (needed before cloning — the repos are private)
 
