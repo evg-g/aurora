@@ -7,8 +7,10 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 7 — contract publication + `oasdiff` gate** (in `appointments-api`).
-Milestones 1–6 are done and committed.
+**Next milestone: 8 — device foundation** (in `aurora-sensor-agent`): protocols
+(`I2CBus`, `SerialPort`, `GpioPin`, `Clock`, `Transport`, `BufferStore`), the SHT4x register-level
+driver, CRC handling, the simulator, and the driver contract suite. No network yet.
+Milestones 1–7 are done and committed. **Note: milestone 8 moves to the `aurora-sensor-agent` repo.**
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -20,7 +22,7 @@ Context for a fresh session:
   Full details in memory `aurora-build-environment`.
 - Tools ready: uv, Node 20 (nvm), Python 3.12, Docker (from WSL, `postgres:16` + `redis:7` images
   pulled), make/gcc, git identity `evgmongo-maker`. sudo needs a password (hand to the user).
-- Milestones 1–6 are done and committed. API working tree clean. Backed up to private GitHub repos
+- Milestones 1–7 are done and committed. API working tree clean. Backed up to private GitHub repos
   under personal account `evg-g` (remotes set; `~/.gh_personal` holds the push token).
 - Backups: the three code repos push to `evg-g/<name>`. This PLAN.md and the top-level docs are
   tracked in a 4th private repo **`evg-g/aurora`** (a git repo rooted at `~/aurora/` that ignores
@@ -83,8 +85,21 @@ labels) + `.dockerignore`, `docker-compose.yml` (local full stack) + `docker-com
 FIRST_PUSH/CORPORATE_NETWORK + ADR 0012. Real bug found + fixed: `httpx` was dev-only but imported at
 runtime, so the `--no-dev` production image crashed on startup — moved to runtime deps.
 
-First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, recall memory
-`aurora-build-environment`, then start milestone 7. Docker must be running for integration tests.
+What milestone 7 delivered (done): OpenAPI contract publication + drift + breaking gates.
+`scripts/export_openapi.py` renders `app.openapi()` deterministically to `contracts/openapi.json`
+(OpenAPI 3.1.0, 21 paths); `make contract` regenerates, `make contract-check` fails on staleness.
+`tests/contract/` drift test asserts served == committed (byte-identical, reusing the exporter's
+serializer). CI `contract` job: drift test + publishes openapi.json artifact + `oasdiff` breaking-change
+gate vs the base branch, overridable only with the `breaking-change` PR label. `make contract-diff`
+runs the same oasdiff locally (binary pinned v1.32.1, installed at `~/.local/bin/oasdiff`).
+`docs/CONTRACT_WORKFLOW.md` (Mermaid: change flow + expand/contract rollout across the 3 repos) +
+ADR 0013. Verified: ruff + mypy --strict (114 files) clean, 89 unit+contract tests green, oasdiff
+exit 0 on identical / exit 1 on a removed path. Web-side drift check is milestone 12; telemetry
+AsyncAPI contract is milestone 10.
+
+First actions on resume: read this PLAN.md, then work in **`aurora-sensor-agent`** — read its
+`CLAUDE.md`, recall memory `aurora-build-environment`, then start milestone 8. (Milestones 8–11 are the
+device repo; Docker only needed later for SIL.)
 
 ## Repos
 
@@ -101,7 +116,7 @@ First actions on resume: read this PLAN.md, read `appointments-api/CLAUDE.md`, r
 - [x] 4. API advanced semantics: idempotency, ETag/If-Match, rate limiting, webhooks + worker; tests for each.
 - [x] 5. Property-based and security test suites; coverage and mutation gates wired into CI.
 - [x] 6. Backend CI/CD complete: build, scan, sign, deploy, smoke, nightly.
-- [ ] 7. Contract publication + `oasdiff` gate.
+- [x] 7. Contract publication + `oasdiff` gate.
 - [ ] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
 - [ ] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
 - [ ] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
