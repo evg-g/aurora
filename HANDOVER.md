@@ -83,7 +83,11 @@ Update this section as you go, so any future session (or account) knows the stat
       injection, mass-assignment) + coverage gate (96.6% line / 92.4% branch on services+api) +
       mutation baseline (mutmut, ~81.6% kill rate, gate ≥78%) + docs/TESTING.md — 281 tests green,
       gates wired into CI)
-- [ ] Milestone 8–11 — device: drivers, behaviour, ingestion, SIL + CI/CD
+- [x] Milestone 8 — device foundation: six Protocol seams, SHT4x register-level driver + CRC,
+      real/sim/replay I²C buses, seeded fridge simulator with fault injection, driver-contract
+      suite. 78 tests + 5 hardware-skipped, ruff + mypy --strict clean, 95% coverage. ADR 0002.
+- [ ] Milestone 9–11 — device: behaviour (excursion machine, buffer, GPIO/serial, faults, soak),
+      ingestion (API MQTT/HTTP), SIL + CI/CD
 - [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD
 - [ ] Milestone 16 — docs, exercises, diagrams, polish
 

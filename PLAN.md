@@ -7,10 +7,11 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 8 — device foundation** (in `aurora-sensor-agent`): protocols
-(`I2CBus`, `SerialPort`, `GpioPin`, `Clock`, `Transport`, `BufferStore`), the SHT4x register-level
-driver, CRC handling, the simulator, and the driver contract suite. No network yet.
-Milestones 1–7 are done and committed. **Note: milestone 8 moves to the `aurora-sensor-agent` repo.**
+**Next milestone: 9 — device behaviour** (in `aurora-sensor-agent`): excursion state machine,
+median filter, SQLite store-and-forward buffer, batching, backoff, the GPIO and serial tiers, the
+full fault-injection catalogue (incl. the buffer/clock faults: NaN, disk full, clock jump), and soak
+tests with a fake clock. No network yet (SIL is milestone 11).
+Milestones 1–8 are done and committed. Work continues in the `aurora-sensor-agent` repo.
 
 Context for a fresh session:
 - Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
@@ -98,8 +99,11 @@ exit 0 on identical / exit 1 on a removed path. Web-side drift check is mileston
 AsyncAPI contract is milestone 10.
 
 First actions on resume: read this PLAN.md, then work in **`aurora-sensor-agent`** — read its
-`CLAUDE.md`, recall memory `aurora-build-environment`, then start milestone 8. (Milestones 8–11 are the
-device repo; Docker only needed later for SIL.)
+`CLAUDE.md`, recall memory `aurora-build-environment`, then start milestone 9. (Milestones 9–11 are the
+device repo; Docker only needed later for SIL.) Milestone 8 built the sensor foundation: six
+`Protocol` seams (`protocols.py`), the SHT4x register-level driver (`drivers/sht4x.py`), the `real`/
+`sim`/`replay` I²C buses, the seeded fridge simulator with fault injection, and the driver-contract
+suite. `make ci-local` green: ruff + mypy --strict clean, 78 tests + 5 hardware-skipped, 95% coverage.
 
 ## Repos
 
@@ -117,7 +121,7 @@ device repo; Docker only needed later for SIL.)
 - [x] 5. Property-based and security test suites; coverage and mutation gates wired into CI.
 - [x] 6. Backend CI/CD complete: build, scan, sign, deploy, smoke, nightly.
 - [x] 7. Contract publication + `oasdiff` gate.
-- [ ] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
+- [x] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
 - [ ] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
 - [ ] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
 - [ ] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
@@ -222,3 +226,34 @@ device repo; Docker only needed later for SIL.)
   - Deviation: mutation runs nightly/on-demand rather than per-PR (a full run is heavy); this matches
     the spec's own nightly-mutation split (§6). ~126 services mutants have "no tests" under the unit
     runner (webhook delivery I/O paths, covered by the integration tier) and are excluded from the score.
+- 2026-09-27: Milestone 8 complete (`aurora-sensor-agent`). Device foundation built and verified —
+  no network, no Docker, no hardware needed:
+  - Six hardware seams as `typing.Protocol` in `src/aurora_sensor_agent/protocols.py`: `I2CBus`,
+    `SerialPort`, `GpioPin`, `Clock`, `Transport`, `BufferStore`. `I2CBus` + `Clock` are implemented
+    and exercised this milestone; the other four are the agreed contracts, implemented in 9-11.
+  - `Reading` value object (`models.py`); real `SystemClock` (`clock.py`); a `FakeClock` in
+    `tests/fakes/` whose `sleep` advances time instead of blocking.
+  - SHT4x register-level driver (`drivers/sht4x.py`): command bytes (0xFD/0xF6/0xE0), measurement
+    delay via the injected Clock, 6-byte frame = two 16-bit words each + CRC-8 (reuses the milestone-1
+    `protocol/crc.py`), per-word CRC verify, raw->°C/%RH conversion (humidity clamped 0..100), soft
+    reset, serial-number read. Talks only to the `I2CBus` seam — no hardware imports.
+  - Three buses satisfy that seam: `real/i2c.py` (smbus2, LAZY imports — module loads with no
+    hardware, first op raises ModuleNotFoundError, proven by a test); `sim/` — a register-level chip
+    simulator (`sim/i2c.py`) enforcing the conversion delay and emitting real CRCs, driven by a
+    seeded, time-pure fridge `ThermalModel` (`sim/thermal.py`: setpoint, door-open warm-ups, noise,
+    drift) with chip/bus fault injection (`sim/faults.py`: BAD_CRC, NACK, TIMEOUT, SHORT_READ,
+    POWER_LOSS, STUCK); `replay/i2c.py` — byte-for-byte replay of a recorded `.jsonl` trace with
+    command-drift detection.
+  - Driver-contract suite (`tests/driver_contract/`): one abstract `Sht4xStackContract` run against
+    sim + replay (real tier skipped, needs a Pi) — proves the three are interchangeable. Plus
+    register-level driver tests, sim thermal + fault tests, replay error-path tests, clock/model tests.
+  - `scripts/record_trace.py` captures the committed fixture `tests/fixtures/traces/sim_baseline.jsonl`
+    (deterministically, from the sim). `.gitignore` fixed to track that fixture (was caught by
+    `traces/*.jsonl`). `aurora-agent sim` CLI subcommand + `make sim` run the driver against the sim.
+    Docs: `docs/HARDWARE_TESTING.md` (milestone-8 portion) + ADR 0002.
+  - Verified green: ruff + ruff format --check + mypy --strict (37 files) clean; 78 tests passed,
+    5 hardware-skipped; 95% total coverage (`real/i2c.py` at 42% is the unavoidable on-device path).
+    `aurora-agent sim` prints realistic ~4.4 °C / 45 %RH readings. No new dependencies.
+  - Deviation: the higher-layer faults from spec §7 (NaN in the pipeline, disk full, clock jump) are
+    buffer/clock-seam faults, not chip/bus faults; they land with the buffer + fault tier in
+    milestone 9. Recorded in ADR 0002.
