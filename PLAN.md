@@ -21,6 +21,10 @@ Context for a fresh session:
   pulled), make/gcc, git identity `evgmongo-maker`. sudo needs a password (hand to the user).
 - Milestones 1–3 are done and committed. API working tree clean. Backed up to private GitHub repos
   under personal account `evg-g` (remotes set; `~/.gh_personal` holds the push token).
+- Backups: the three code repos push to `evg-g/<name>`. This PLAN.md and the top-level docs are
+  tracked in a 4th private repo **`evg-g/aurora`** (a git repo rooted at `~/aurora/` that ignores
+  the three code dirs). After updating PLAN.md at the end of a milestone, run `git -C ~/aurora push`
+  too, or the checklist/progress backup goes stale.
 
 What milestone 3 delivered (done):
 - FastAPI surface under `/api/v1`: auth (`/auth/login|refresh|logout|me`), users, clinics,
