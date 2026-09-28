@@ -18,6 +18,29 @@ next milestone. Everything is under the personal account **evg-g**.
 Then launch Claude Code from `~/aurora` and say:
 *"Read RECOVERY.md, HANDOVER.md and PLAN.md, then set up this machine."*
 
+## One-prompt restore with Claude Code
+
+If Claude Code is already installed and running inside WSL, you can hand it the whole clone + setup in a
+single prompt instead of doing steps 1–4 by hand.
+
+Prerequisites Claude **cannot** do for you (its own runtime and anything needing `sudo`): WSL2
+Ubuntu-24.04, Docker Desktop, Claude Code, and `git` in WSL must already exist. Launch `claude` inside
+the WSL shell, then paste the prompt below with your token in place.
+
+Token safety: give the PAT **`repo` scope only**, and **revoke/rotate it after** the restore. To avoid
+pasting the token into the session at all, run `gh auth login` yourself first (`! gh auth login`) and
+drop step 1 from the prompt.
+
+> I'm restoring a project on a freshly formatted machine. Here is a GitHub Personal Access Token for my
+> private account **evg-g**: `<PASTE_TOKEN>`. Do this:
+> 1. Configure git to use it over HTTPS (store it in `~/.gh_personal` with the credential helper; do not
+>    echo the token back).
+> 2. Clone `evg-g/aurora` into `~/aurora`, then clone `evg-g/appointments-api`,
+>    `evg-g/appointments-web`, and `evg-g/aurora-sensor-agent` inside `~/aurora`.
+> 3. Read `RECOVERY.md`, `HANDOVER.md`, and `PLAN.md`, then follow RECOVERY.md to set this machine up —
+>    run `make setup` in each repo and `make ci-local` to verify. Hand me any `sudo`/manual steps to run
+>    myself, and stop if a prerequisite (Docker, uv, Node, Python) is missing.
+
 ## 0. Prerequisites — install the toolchain (not in git)
 
 Work inside the WSL2 Linux filesystem (`~/`), never `/mnt/c` or OneDrive — Docker and
