@@ -99,7 +99,12 @@ Update this section as you go, so any future session (or account) knows the stat
       manifest verified before apply; staged rollout (canary→10%→fleet) with auto-halt; SIL tier
       (agent vs Mosquitto + the API image in testcontainers — green against Docker); .deb packaging +
       gateway image; matrix CI + nightly (soak, flake) + hil gated off. ADRs 0005–0007.
-- [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD (next)
+- [x] Milestone 12 — web foundation (`appointments-web`): design tokens + theming (Tailwind v4
+      `@theme`, light/dark via CSS vars), generated API client (openapi-typescript + openapi-fetch,
+      refresh-on-401, drift gate), auth flow (RHF+Zod, protected + role-guarded routes, TanStack
+      Query), four-state primitives + `QueryBoundary`, layout shell, typed MSW mocks, 33 tests,
+      Storybook 9 + a11y. ADRs 0002–0004. Verified green; pushed to `evg-g/appointments-web`.
+- [ ] Milestone 13–15 — web: features, tests, CI/CD (next)
 - [ ] Milestone 16 — docs, exercises, diagrams, polish
 
 The authoritative, up-to-date state lives in `~/aurora/PLAN.md` (in WSL). Read that first.

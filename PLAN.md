@@ -7,9 +7,47 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 12 — web foundation** (work moves to `appointments-web`): design tokens, layout
-shell, the generated API client (from `appointments-api/contracts/openapi.json`), the auth flow,
-four-state primitives, and Storybook. The two backend/device repos are complete through milestone 11.
+**Next milestone: 13 — web features** (in `appointments-web`): calendar/week view, booking flow
+(service → clinician → slot → confirm) with optimistic updates + rollback, appointment detail +
+state transitions, admin views (clinics/clinicians/services), an audit-log table with server-side
+pagination + filters, a settings page, and the cold-chain dashboard (live SSE charts, device health
+tiles, excursion timeline + acknowledge, threshold editor). The foundation (milestone 12) is done:
+tokens, theming, the generated API client, the auth flow, four-state primitives, layout, and
+Storybook are all in place and green. Read `appointments-web/CLAUDE.md` and recall memory
+`aurora-build-environment` first.
+
+Milestone 12 delivered (done, in `appointments-web`): web foundation.
+- **Design tokens first** (`src/styles/tokens.css`): two layers — primitive scales + semantic
+  tokens; single teal accent, 8px rhythm, type scale, radii, elevation, motion. Light/dark flip at
+  the CSS-custom-property level. Tailwind v4 maps tokens onto utilities via `@theme inline` (so
+  `bg-surface`/`text-fg` re-resolve at runtime on theme change). Self-hosted Inter (no external
+  font service). `src/theme/` provider: OS default + user override, no FOUC.
+- **Generated API client** (`src/api/`): vendored `contracts/openapi.json` →
+  `schema.d.ts` via `openapi-typescript`; `openapi-fetch` client with bearer attach +
+  single-flight refresh-on-401 retry; `errors.ts` maps problem+json / 422 to form + field
+  messages. Drift gate `npm run check:client` + `scripts/vendor-contract.sh`; CI `contract` job.
+- **Auth** (`src/auth/`): token store (in-memory + localStorage, ADR 0003), `AuthProvider` +
+  `/auth/me` hydration, login (RHF + Zod), `ProtectedRoute`, `RequireRole`/`RoleGate`. TanStack
+  Query v5 (factory client). `QueryBoundary` renders exactly one of loading/empty/error/success.
+- **Primitives + layout**: Button, Input/Field, Card, Alert, Badge, Spinner, Skeleton, EmptyState,
+  ErrorState, ThemeToggle (Radix for the account menu); app shell with role-aware nav, skip link,
+  responsive from 360px; React Router v7 route tree (public login + guarded app; feature pages are
+  designed "coming in milestone 13" placeholders).
+- **Mocks + tests + Storybook**: MSW handlers typed against the generated OpenAPI types, shared by
+  Vitest + the dev server; 33 tests (token store, refresh middleware, error parser, Zod, four-state
+  QueryBoundary, Button/Field/ThemeToggle, full auth journeys + route authz). Storybook 9 + a11y
+  (axe) addon; a story per primitive incl. the four states. ADRs 0002–0004; README/KNOWN_GAPS/
+  CLAUDE/Makefile updated; CI gains `contract` (client drift) + `storybook` jobs.
+- Verified: prettier + eslint + `tsc --strict` clean; 33/33 Vitest green; `vite build` +
+  `build:storybook` succeed; client drift gate passes. New deps: @tanstack/react-query,
+  react-router-dom, react-hook-form, zod, @hookform/resolvers, openapi-fetch, @radix-ui/*,
+  lucide-react, clsx, tailwind-merge, @fontsource-variable/inter (runtime); tailwindcss +
+  @tailwindcss/vite, openapi-typescript, msw, storybook + @storybook/react-vite +
+  @storybook/addon-a11y, eslint-plugin-storybook (dev).
+- Deviations (see `appointments-web/docs/KNOWN_GAPS.md`): tokens in localStorage (XSS tradeoff,
+  BFF is the follow-up); reactive-only refresh (no proactive); bundle not yet code-split (budgets
+  are milestone 14); MSW-in-Storybook deferred until data-driven feature stories (milestone 13);
+  SSE EventSource auth pending (milestone 13).
 
 Milestone 11 delivered (done, in `aurora-sensor-agent`): device SIL + CI/CD.
 - Real transports behind the `Transport` seam: `transport/mqtt.py` (paho v2, QoS 1, waits for PUBACK
@@ -185,7 +223,7 @@ all pass.
 - [x] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
 - [x] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
 - [x] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
-- [ ] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
+- [x] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
 - [ ] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
 - [ ] 14. Web test suites: unit, component+MSW, Playwright E2E, axe, visual, Lighthouse budgets.
 - [ ] 15. Web CI/CD complete, including E2E against the composed stack + fleet simulator.
@@ -416,3 +454,26 @@ all pass.
     New deps: paho-mqtt, httpx, cryptography, PyYAML (runtime); jsonschema, testcontainers, types-PyYAML,
     types-jsonschema (dev). A real bug surfaced: the local `appointments-api:local` image was stale
     (pre-milestone-10, no MQTT worker module) — rebuilt from current source before SIL passed.
+- 2026-09-28: Milestone 12 complete (`appointments-web`). Web foundation built and verified:
+  - Design tokens first (`src/styles/tokens.css`): primitive scales + semantic tokens, single teal
+    accent, 8px rhythm, type/radii/elevation/motion; light/dark flip at the CSS-var level. Tailwind
+    v4 via `@theme inline` so utilities re-resolve on theme change. `src/theme/` provider (OS default
+    + user override, no FOUC via an inline bootstrap). Self-hosted Inter. ADR 0002.
+  - Generated API client (`src/api/`): vendored `contracts/openapi.json` → `schema.d.ts`
+    (openapi-typescript); `openapi-fetch` client with bearer attach + single-flight refresh-on-401
+    retry; `errors.ts` maps problem+json / 422 → form + field errors. Drift gate `check:client` +
+    `scripts/vendor-contract.sh`; CI `contract` job. ADR 0001 realised.
+  - Auth (`src/auth/`, ADR 0003): token store (memory + localStorage), `AuthProvider` + `/auth/me`
+    hydration, login (RHF + Zod), `ProtectedRoute`, `RequireRole`/`RoleGate`. TanStack Query v5
+    factory client; `QueryBoundary` = one of loading/empty/error/success (ADR 0004).
+  - Primitives + layout: Button, Input/Field, Card, Alert, Badge, Spinner, Skeleton, EmptyState,
+    ErrorState, ThemeToggle (Radix account menu); app shell with role-aware nav + skip link,
+    responsive from 360px; React Router v7 (public login + guarded app; feature pages are designed
+    placeholders). MSW handlers typed against the generated types, shared by Vitest + dev server.
+    Storybook 9 + a11y (axe) addon; story per primitive incl. the four states.
+  - Verified: prettier + eslint + `tsc --strict` clean; 33 Vitest tests green (unit + component +
+    auth journeys + route authz); `vite build` + `build:storybook` succeed; client drift gate passes.
+    Committed + pushed to `evg-g/appointments-web` (single milestone commit, 95 files).
+  - Deviations (`appointments-web/docs/KNOWN_GAPS.md`): localStorage token storage (XSS tradeoff,
+    BFF is the follow-up); reactive-only refresh; bundle not code-split (budgets = milestone 14);
+    MSW-in-Storybook + SSE EventSource auth deferred to milestone 13.
