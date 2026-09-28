@@ -7,15 +7,41 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 15 — web CI/CD complete** (in `appointments-web`): the deploy pipeline (build →
-sign → deploy staging → smoke → manual approval → prod, GHCR + cosign + OIDC, all cloud steps gated
-so a fork stays green), and the E2E `e2e` job run against the **fully composed stack** — Docker
-Compose bringing up the real API + Postgres + Redis + web (+ the device/fleet simulator for ingestion)
-instead of the MSW backend. Milestone 14's Playwright specs are written to be reused unchanged; only
-what serves `/api/v1` changes. The web CI already has `e2e` (MSW-backed), `lighthouse`, and the bundle
-budget jobs from milestone 14 — extend, don't rebuild. Read `appointments-web/CLAUDE.md`,
-`docs/BROWSER_TESTING.md`, ADR 0006, and recall memory `aurora-build-environment` first. The API's
-`cd.yml` (milestone 6) is the reference shape for the deploy pipeline.
+**Next milestone: 16 — documentation, exercises, diagrams, final polish** (across all three repos):
+`docs/EXERCISES.md` (≥20 break-it-on-purpose exercises), the remaining Mermaid diagrams, the
+top-level README polish, and the self-verification checklist in §13 of the bootstrap prompt
+(GATES_VERIFIED.md, the "break four things" exercise, a clean-clone bootstrap of each repo). Recall
+memory `aurora-build-environment` first. Milestones 1–15 are done and committed.
+
+Milestone 15 delivered (done, in `appointments-web`): web CI/CD complete.
+- **Composed-stack E2E**: `docker-compose.e2e.yml` stands up Postgres + Redis + the API + the nginx
+  **web tier** (serves the built SPA + reverse-proxies `/api` and `/health` on the same origin, SSE-
+  safe, CSP + security headers — `nginx/default.conf.template`, hardened `Dockerfile`).
+  `scripts/seed-e2e.mjs` provisions the aligned demo graph ("Aurora Downtown" + a "General practice"
+  clinician + the accounts) over the **public API**; the first admin is bootstrapped by the compose
+  `seed-admin` service (`scripts/seed.py`). `playwright.composed.config.ts` runs the **unchanged**
+  milestone-14 journeys at `http://localhost:8080`. Only `e2e/support/helpers.ts` branches on
+  `E2E_BACKEND=composed`: real login (not a mock token) + `page.route()` error injection (not the MSW
+  control surface). Verified locally against real Docker: **11/11 composed journeys green**.
+- Surfaced three real API rules MSW had papered over: `EmailStr` rejects the reserved `.test` TLD
+  (composed uses `@aurora-clinic.com`); availability filters to the future (composed books the next
+  Monday); staff must name a `patient_id` and the wizard has no patient picker (the manage journey
+  arranges its appointment via the API, then transitions/cancels through the UI). a11y + visual stay
+  on the MSW build (seed-/engine-specific).
+- **Delivery** (`cd.yml`, mirrors the API's): release-please (node) → build + cosign keyless sign +
+  GHCR push (provenance) → deploy staging → smoke (`scripts/smoke_test.mjs`) → manual-approval prod →
+  smoke, Azure Container Apps via OIDC; every cloud step gated by `DEPLOY_ENABLED`. No migration step
+  (the web image is static). `infra/main.bicep` (+ staging/production bicepparam) + the no-cloud
+  `docker-compose.prod.yml`.
+- **CI**: `ci.yml` gains `e2e-composed` (gated behind `vars.API_REPO`, builds the API image, same
+  shape as the API's `sil`), `security` (npm audit on prod deps + gitleaks + Trivy image scan + SBOM),
+  `codeql`, `commitlint`, `workflow-lint`. actionlint clean on `ci.yml` + `cd.yml`.
+- Docs: ADR 0007, `docs/CI_CD.md`, `docs/DEPLOYMENT.md`, `docs/BROWSER_TESTING.md` (composed section),
+  README/KNOWN_GAPS/CLAUDE/Makefile/.env.example updated. Verified: prettier + eslint + tsc + build +
+  bundle budget green; mock-mode e2e still **41/41** (11 journeys + 20 a11y + 10 visual).
+- Deviations (KNOWN_GAPS): fleet/device simulator not wired into the web compose (no journey asserts
+  on live ingestion; it is proven by device SIL + API telemetry tiers); security/codeql jobs wired but
+  not run locally (GitHub-hosted); HTTPS-only API upstream is a one-line nginx change (documented).
 
 Milestone 14 delivered (done, in `appointments-web`): browser test tiers + performance budgets.
 - **Playwright E2E** (`e2e/journeys/`): login (happy + invalid creds + unauth redirect), book (full
@@ -287,7 +313,7 @@ all pass.
 - [x] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
 - [x] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
 - [x] 14. Web test suites: Playwright E2E, axe, visual regression, Lighthouse + bundle budgets, code-splitting.
-- [ ] 15. Web CI/CD complete, including E2E against the composed stack + fleet simulator.
+- [x] 15. Web CI/CD complete, including E2E against the composed stack (deploy pipeline + cd.yml).
 - [ ] 16. Documentation, exercises, diagrams, final polish.
 
 ## Progress log
@@ -578,3 +604,27 @@ all pass.
     73 Vitest + 11 E2E + 20 a11y + 10 visual + bundle + Lighthouse all green (Chromium).
   - Deviations: E2E backed by MSW (composed-stack run is m15); WebKit CI-only; visual Chromium-only;
     cold-chain not snapshotted. Local run needs corp CA + `libnss3/libnspr4/libasound2t64` (documented).
+- 2026-09-28: Milestone 15 complete (`appointments-web`). Web CI/CD complete, verified:
+  - Composed-stack E2E: `docker-compose.e2e.yml` (Postgres + Redis + migrate + API + a `seed-admin`
+    bootstrap + the nginx web tier) + `nginx/default.conf.template` (SPA history fallback, same-origin
+    `/api` + `/health` reverse proxy, SSE `proxy_buffering off`, CSP + security headers) + hardened
+    multi-stage `Dockerfile`. `scripts/seed-e2e.mjs` provisions "Aurora Downtown" + a "General
+    practice" clinician + a service + the patient/clinician accounts over the public API.
+    `playwright.composed.config.ts` runs the milestone-14 journeys unchanged at localhost:8080;
+    `e2e/support/helpers.ts` branches on `E2E_BACKEND=composed` (real login + `page.route()`
+    injection, ordinary email domain, future bookable Monday, staff-books-via-API). 11/11 green
+    against real Docker; mock-mode e2e still 41/41.
+  - Delivery `cd.yml` (mirrors the API): release-please (node) → build + cosign keyless sign + GHCR
+    (provenance) → staging → smoke (`scripts/smoke_test.mjs`) → manual-approval prod → smoke, Azure
+    Container Apps via OIDC, all cloud steps gated by `DEPLOY_ENABLED`. `infra/main.bicep` +
+    staging/production bicepparam; `docker-compose.prod.yml` no-cloud fallback.
+  - `ci.yml` gains `e2e-composed` (gated on `vars.API_REPO`, builds the API image — same shape as the
+    API `sil`), `security` (npm audit prod deps + gitleaks + Trivy image scan + CycloneDX SBOM),
+    `codeql`, `commitlint`, `workflow-lint`. actionlint clean.
+  - Docs: ADR 0007, `docs/CI_CD.md`, `docs/DEPLOYMENT.md`, BROWSER_TESTING composed section,
+    README/KNOWN_GAPS/CLAUDE/Makefile/.env.example (fixed `VITE_API_URL`). Verified: prettier + eslint
+    + tsc + vite build + bundle budget green; actionlint on ci.yml + cd.yml green.
+  - Real API rules surfaced (MSW had hidden them): reserved-`.test`-TLD rejection, future-only
+    availability, staff-must-name-a-patient. Deviations (KNOWN_GAPS): fleet/device simulator not wired
+    into the web compose (no journey asserts on live ingestion; proven by device SIL + API telemetry);
+    security/codeql jobs not run locally (GitHub-hosted); HTTPS API upstream is a documented one-liner.
