@@ -7,14 +7,44 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 14 — web test suites** (in `appointments-web`): Playwright E2E against the composed
-stack (login, book, reschedule, cancel, authz denial, error path), `@axe-core/playwright` +
-Storybook a11y in CI, visual regression (Playwright screenshots, light + dark), and Lighthouse
-performance budgets (LCP/CLS/TBT + bundle size) — plus the bundle code-splitting the budgets require
-(the app is currently one ~650 kB chunk; see `appointments-web/docs/KNOWN_GAPS.md`). Milestone 13
-already added a full Vitest unit+component suite (73 tests) and MSW four-state coverage; milestone 14
-is the browser-level tiers on top. Read `appointments-web/CLAUDE.md` and recall memory
-`aurora-build-environment` first.
+**Next milestone: 15 — web CI/CD complete** (in `appointments-web`): the deploy pipeline (build →
+sign → deploy staging → smoke → manual approval → prod, GHCR + cosign + OIDC, all cloud steps gated
+so a fork stays green), and the E2E `e2e` job run against the **fully composed stack** — Docker
+Compose bringing up the real API + Postgres + Redis + web (+ the device/fleet simulator for ingestion)
+instead of the MSW backend. Milestone 14's Playwright specs are written to be reused unchanged; only
+what serves `/api/v1` changes. The web CI already has `e2e` (MSW-backed), `lighthouse`, and the bundle
+budget jobs from milestone 14 — extend, don't rebuild. Read `appointments-web/CLAUDE.md`,
+`docs/BROWSER_TESTING.md`, ADR 0006, and recall memory `aurora-build-environment` first. The API's
+`cd.yml` (milestone 6) is the reference shape for the deploy pipeline.
+
+Milestone 14 delivered (done, in `appointments-web`): browser test tiers + performance budgets.
+- **Playwright E2E** (`e2e/journeys/`): login (happy + invalid creds + unauth redirect), book (full
+  wizard + optimistic create), transition/confirm + cancel (ETag/If-Match), authz denial (patient →
+  admin/cold-chain redirect), and forced error + empty states. The specs drive the **real prod build**
+  served by `vite preview` with the app's own typed MSW backend (`VITE_ENABLE_MSW=true` → `dist-e2e`)
+  — deterministic, Docker-free. Error states are forced through the MSW `scenarios` map via a typed
+  `window.__aurora_e2e` hook (runtime) + an `addInitScript` boot hook (survives navigation); sessions
+  seeded via a role-encoded token the mock resolves after reload (`bearerUser` fallback added). 11/11
+  green on Chromium.
+- **Accessibility** (`e2e/a11y/`): `@axe-core/playwright` on every route × light/dark (WCAG 2.2 AA
+  tag set), zero serious/critical, enforced. 20/20 green. The gate caught a real AA contrast bug (the
+  audit-log entity id used `text-subtle` at 4.08:1) — fixed to `text-muted`.
+- **Visual regression** (`e2e/visual/`): screenshots of login/dashboard/appointments-empty/booking/
+  admin-clinics × light+dark, made deterministic (frozen `page.clock`, reduced motion, pinned
+  locale/timezone). 10 Chromium-on-Linux baselines committed. Cold-chain is intentionally excluded
+  (stream/time-driven chart → flaky by construction; covered by a11y + component + E2E instead).
+- **Performance budgets**: the app was code-split — feature pages are route-level `React.lazy` chunks
+  behind Suspense (`src/app/router.tsx`), `node_modules` grouped into vendor chunks (`vite.config.ts`).
+  Initial JS 638 kB single chunk → **~184 kB gzipped initial** (total ~210 kB). Enforced by
+  `scripts/check-bundle-size.mjs` (gzip, initial ≤235 / total ≤265 kB) + Lighthouse CI
+  (`lighthouserc.json`, median of 3): **LCP ≈0.6 s, CLS 0, TBT 0, performance 1.0**.
+- CI (`.github/workflows/ci.yml`) gains `build`→bundle budget, `e2e` (Chromium + a WebKit shard via
+  `PW_ALL_BROWSERS=1`, artifacts on failure), and `lighthouse` jobs. Docs: ADR 0006,
+  `docs/BROWSER_TESTING.md`; README/KNOWN_GAPS/CLAUDE/Makefile updated. Vitest suite still 73 green;
+  lint/typecheck/build clean.
+- Deviations: E2E backed by MSW (composed-stack run = m15); WebKit is a CI-only shard, visual is
+  Chromium-only (engine-specific baselines); cold-chain not visually snapshotted. Local browser run
+  needs a corp-CA + 3 system libs (documented in `docs/BROWSER_TESTING.md` + memory).
 
 Milestone 13 delivered (done, in `appointments-web` + a small `appointments-api` addition): web features.
 - **Feature slices** under `src/features/` (appointments, calendar, admin, settings, cold-chain);
@@ -256,7 +286,7 @@ all pass.
 - [x] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
 - [x] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
 - [x] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
-- [ ] 14. Web test suites: unit, component+MSW, Playwright E2E, axe, visual, Lighthouse budgets.
+- [x] 14. Web test suites: Playwright E2E, axe, visual regression, Lighthouse + bundle budgets, code-splitting.
 - [ ] 15. Web CI/CD complete, including E2E against the composed stack + fleet simulator.
 - [ ] 16. Documentation, exercises, diagrams, final polish.
 
@@ -529,3 +559,22 @@ all pass.
     6 audit-log integration tests pass; coverage gate 95.38%/86.64% on services+api.
   - Deviations: audit write instrumentation, bundle code-splitting (m14 budgets), MSW-in-Storybook,
     create-only threshold editor, read-only profile.
+- 2026-09-28: Milestone 14 complete (`appointments-web`). Browser test tiers + performance budgets:
+  - Playwright E2E (`e2e/journeys/`): login/book/transition/cancel/authz-denial/error+empty states,
+    driving the real prod build served by `vite preview` with the app's typed MSW backend
+    (`VITE_ENABLE_MSW=true` → `dist-e2e`) — deterministic, Docker-free. Error injection via the MSW
+    `scenarios` map through a typed `window.__aurora_e2e` runtime hook + an `addInitScript` boot hook
+    (survives navigation); sessions seeded via a role-encoded token (`bearerUser` fallback). 11 green.
+  - a11y (`e2e/a11y/`): `@axe-core/playwright`, every route × light/dark, zero serious/critical (20
+    green). Caught + fixed a real WCAG AA contrast bug (audit-log id `text-subtle` 4.08:1 → `text-muted`).
+  - Visual (`e2e/visual/`): 5 key pages × light/dark, deterministic (frozen clock, reduced motion,
+    pinned locale/tz); 10 Chromium-on-Linux baselines committed. Cold-chain excluded (live chart).
+  - Code-splitting: route-level `React.lazy` + vendor chunks; 638 kB single chunk → ~184 kB gz initial
+    / ~210 kB total. Gated by `scripts/check-bundle-size.mjs` + Lighthouse (`lighthouserc.json`, median
+    of 3): LCP ≈0.6 s, CLS 0, TBT 0, perf 1.0.
+  - CI: `build` (bundle budget), `e2e` (Chromium + WebKit shard via `PW_ALL_BROWSERS=1`), `lighthouse`
+    jobs with artifact upload. ADR 0006 + `docs/BROWSER_TESTING.md`; README/KNOWN_GAPS/CLAUDE/Makefile.
+    New devDeps: `@playwright/test`, `@axe-core/playwright`, `@lhci/cli`. Verified: lint + typecheck +
+    73 Vitest + 11 E2E + 20 a11y + 10 visual + bundle + Lighthouse all green (Chromium).
+  - Deviations: E2E backed by MSW (composed-stack run is m15); WebKit CI-only; visual Chromium-only;
+    cold-chain not snapshotted. Local run needs corp CA + `libnss3/libnspr4/libasound2t64` (documented).
