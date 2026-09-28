@@ -3,6 +3,21 @@
 This restores the whole Aurora project from the private GitHub backups and lets you pick up at the
 next milestone. Everything is under the personal account **evg-g**.
 
+## At a glance
+
+1. **Install the toolchain** — VS Code, Claude Code, WSL2 Ubuntu-24.04, Docker Desktop, and inside WSL
+   `git`, `uv`, Node 20, Python 3.12, `make`/`gcc` (§0).
+2. **Authenticate to GitHub** — a PAT or an SSH key, **before** cloning; the repos are private and will
+   not clone without it (§1).
+3. **Clone** the meta repo and the three code repos inside it (§2).
+4. **Restore dependencies** — `make setup` / `npm ci` (§3).
+5. **Verify** — `make ci-local`, then `make test-integration` (§4).
+6. Behind a corporate proxy, add the CA and set the cert env vars (§5); for the full test tiers, build
+   the API image and install Playwright (§6).
+
+Then launch Claude Code from `~/aurora` and say:
+*"Read RECOVERY.md, HANDOVER.md and PLAN.md, then set up this machine."*
+
 ## 0. Prerequisites — install the toolchain (not in git)
 
 Work inside the WSL2 Linux filesystem (`~/`), never `/mnt/c` or OneDrive — Docker and
@@ -59,6 +74,8 @@ git config --global credential.helper "store --file ~/.gh_personal"
 (Or set up an SSH key on evg-g and use the SSH clone URLs instead.)
 
 ## 2. Clone the meta repo AS the project folder, then the code repos inside it
+
+**Do §1 (GitHub auth) first** — these are private repos and the clone fails without credentials.
 
 ```bash
 cd ~
