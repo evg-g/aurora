@@ -92,11 +92,77 @@ Then open Claude Code from `~/aurora` and say:
 
 > Read HANDOVER.md and PLAN.md, then continue from the next unchecked milestone.
 
+**Run Claude Code from inside the WSL shell** (launch `claude` in the Ubuntu terminal at `~/aurora`),
+so it operates directly on the Linux filesystem. If you instead run Claude Code on the Windows side
+driving WSL, be aware of the execution quirks in the last section.
+
+## 5. If you are behind a corporate TLS-inspecting proxy
+
+The build was done behind such a proxy. On a **clean home network you can skip this whole section** —
+nothing here is needed. Behind a corporate proxy, HTTPS is re-signed with a private CA that the tools
+do not trust by default, so package installs and browser downloads fail with certificate errors.
+
+**Add the corporate root CA to the system store (once):**
+
+```bash
+# WSL — copy your corp root CA (.crt, PEM) in, then:
+sudo cp corp-root-ca.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates          # adds it to /etc/ssl/certs/ca-certificates.crt
+```
+
+**Then point each tool at the system store** (these belong in your shell, e.g. `~/.bashrc`, never in
+the repo):
+
+```bash
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt   # npm + Playwright download
+export UV_SYSTEM_CERTS=1   # uv's rustls ignores SSL_CERT_FILE; this makes it use the OS store
+                           # (older uv: UV_NATIVE_TLS=1, now deprecated)
+```
+
+Without `UV_SYSTEM_CERTS=1`, `make setup` (`uv sync`) fails with `invalid peer certificate:
+UnknownIssuer`. Details per repo: `appointments-api/docs/CORPORATE_NETWORK.md` (uv/pip + the Docker
+`EXTRA_CA_CERT` build arg) and `appointments-web/docs/BROWSER_TESTING.md` (Playwright).
+
+## 6. Extra setup for the full test tiers
+
+The core gate (`make ci-local`) needs none of this, but the heavier tiers do:
+
+- **Docker images** — the integration/SIL tiers pull `postgres:16`, `redis:7`, and
+  `eclipse-mosquitto:2` automatically via testcontainers (first run is slow).
+- **The `appointments-api:local` image** is needed by the device **SIL** tier and the web
+  **composed-stack E2E**. Build it from current source, and rebuild it whenever the API changes — a
+  stale image is a real gotcha (a pre-telemetry image has no MQTT worker and the SIL worker container
+  dies):
+  ```bash
+  docker build -t appointments-api:local ~/aurora/appointments-api
+  # behind the proxy: add --build-arg EXTRA_CA_CERT="$(cat corp-root-ca.crt)"
+  ```
+- **Playwright browsers** (web browser tiers — E2E, a11y, visual, Lighthouse):
+  ```bash
+  cd ~/aurora/appointments-web && make setup-e2e     # npx playwright install chromium
+  ```
+  Behind the proxy, Chromium also needs three system libs. Either
+  `sudo apt-get install -y libnss3 libnspr4 libasound2t64`, or the no-sudo route: `apt-get download`
+  those three, `dpkg -x` each into `~/pwlibs`, then
+  `export LD_LIBRARY_PATH=~/pwlibs/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH`. See
+  `appointments-web/docs/BROWSER_TESTING.md`.
+- **sudo** in WSL needs your password — run the `apt`/`update-ca-certificates` lines yourself.
+
 ## Notes
 
 - **Pushing backups again:** the three code repos and this meta repo already have `origin` set to
   `evg-g` in the pushed history, but a fresh clone sets `origin` for you. After each milestone,
   `git push` in the changed code repo AND `git -C ~/aurora push` (so PLAN.md's progress is backed
   up).
-- **Not restored (and not needed):** Claude Code's auto-memory. It only held environment notes,
-  which this file and HANDOVER already cover.
+- **Claude Code's auto-memory is NOT in git** and is wiped by a format. Its useful content — the
+  toolchain versions, the corporate-CA env above, the `appointments-api:local` staleness gotcha, and
+  the Playwright system-lib workaround — is now captured in this file and the per-repo docs, so a fresh
+  clone is self-sufficient. If a future session adds new environment knowledge to memory, fold it back
+  into this file so it survives the next format.
+- **Driving WSL from a Windows-hosted Claude Code** (only if you don't run `claude` inside WSL): call
+  WSL via `MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash /home/<user>/script.sh`; write commands to a
+  script file rather than inlining them (PowerShell mangles `$VAR`/quotes/heredocs on the way through);
+  edit WSL files via the `\\wsl.localhost\Ubuntu-24.04\home\<user>\...` path; and in non-login scripts
+  `export HOME=/home/<user>` and source nvm, because `$HOME` is unset there.

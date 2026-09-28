@@ -156,6 +156,9 @@ make fleet
 Behind a TLS-inspecting corporate proxy, see each repo's `docs/CORPORATE_NETWORK.md` /
 `docs/BROWSER_TESTING.md`. On a clean network none of that is needed.
 
+Restoring the whole project on a new or formatted machine (toolchain, auth, clone layout, proxy and
+test-tier setup): [`RECOVERY.md`](./RECOVERY.md).
+
 ## License
 
 MIT — each repo carries its own `LICENSE`.
