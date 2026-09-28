@@ -7,11 +7,41 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 16 — documentation, exercises, diagrams, final polish** (across all three repos):
-`docs/EXERCISES.md` (≥20 break-it-on-purpose exercises), the remaining Mermaid diagrams, the
-top-level README polish, and the self-verification checklist in §13 of the bootstrap prompt
-(GATES_VERIFIED.md, the "break four things" exercise, a clean-clone bootstrap of each repo). Recall
-memory `aurora-build-environment` first. Milestones 1–15 are done and committed.
+**All 16 milestones are done and committed.** The build is complete. Recall memory
+`aurora-build-environment` before running anything in WSL.
+
+What remains is *portfolio publishing* (not a build milestone): create the personal public GitHub
+repos, scrub history for employer/proxy/cert data, and add a live-dashboard GIF. See HANDOVER.md §7
+(portfolio checklist) and docs/FIRST_PUSH.md in each repo. The screenshots in `docs/screenshots/` are
+the committed Playwright visual baselines and are ready to use.
+
+Milestone 16 delivered (done, across all three repos + the meta repo): documentation, exercises,
+diagrams, final polish.
+- **EXERCISES.md in each repo** — 26 break-it-on-purpose exercises total (11 API, 8 device, 7 web),
+  each with the change, the gate that should fail, the command, and the restore step.
+- **API_TESTING_GUIDE.md + `requests/*.http`** in appointments-api — testing by topic (auth,
+  pagination, idempotency, concurrency, DST, telemetry, webhooks, errors) with hand-runnable requests
+  whose bodies were generated from the committed OpenAPI so they match the real API; seeded creds
+  `admin@aurora-clinic.com` / `password123`.
+- **Missing Mermaid diagrams** — `appointments-api/docs/DIAGRAMS.md` (appointment state machine, auth +
+  refresh-rotation flow, excursion engine, plus links to the telemetry/CI/contract diagrams) and the
+  excursion state machine added to the device `HARDWARE_TESTING.md`.
+- **§13 "break four things" verified for real** and recorded in `docs/GATES_VERIFIED.md`: removed the
+  exclusion constraint (unit metadata test fails), renamed an OpenAPI field (contract drift test
+  fails), removed an ARIA label (axe a11y critical `button-name` — needed removing the `title` fallback
+  too), disabled CRC (register-level test fails). Restored; each gate green again. Honest finding
+  recorded: the in-process ASGI concurrent double-booking test does not, on its own, depend on the DB
+  exclusion constraint (the event loop serializes the two gathered requests) — the DB constraint's real
+  value is multi-connection races, proven directly in milestone 2.
+- **Cleanup** — removed the dead `appointments-web/src/routes/ComingSoon.tsx` (a milestone-12
+  placeholder superseded when milestone 13 built the real feature pages); web lint + typecheck + build
+  still green. The only remaining TODO/placeholder hits are legitimate (form placeholders, docstrings)
+  or third-party libs vendored under the gitignored `aurora-sensor-agent/staging/`.
+- **Top-level README** rewritten as the portfolio front door (status, real screenshots, "what each
+  repo teaches" table, diagram + exercise links, a "built with Claude Code" note). API repo README
+  status un-staled (was "through milestone 7"; now lists telemetry + audit log + a Docs index).
+- Verified green after restore: API unit metadata + contract drift (4 passed), device crc + faults
+  (19 passed), web lint + typecheck + build. Clean-clone bootstrap re-verified (see progress log).
 
 Milestone 15 delivered (done, in `appointments-web`): web CI/CD complete.
 - **Composed-stack E2E**: `docker-compose.e2e.yml` stands up Postgres + Redis + the API + the nginx
@@ -314,7 +344,7 @@ all pass.
 - [x] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
 - [x] 14. Web test suites: Playwright E2E, axe, visual regression, Lighthouse + bundle budgets, code-splitting.
 - [x] 15. Web CI/CD complete, including E2E against the composed stack (deploy pipeline + cd.yml).
-- [ ] 16. Documentation, exercises, diagrams, final polish.
+- [x] 16. Documentation, exercises, diagrams, final polish.
 
 ## Progress log
 
@@ -628,3 +658,26 @@ all pass.
     availability, staff-must-name-a-patient. Deviations (KNOWN_GAPS): fleet/device simulator not wired
     into the web compose (no journey asserts on live ingestion; proven by device SIL + API telemetry);
     security/codeql jobs not run locally (GitHub-hosted); HTTPS API upstream is a documented one-liner.
+- 2026-09-28: Milestone 16 complete (all three repos + the meta repo). Documentation, exercises,
+  diagrams, final polish. **The build is done — all 16 milestones shipped.**
+  - `docs/EXERCISES.md` in each repo: 26 break-it-on-purpose exercises (11 API, 8 device, 7 web), each
+    with the change, the gate that should fail, the command, and restore.
+  - `appointments-api/docs/API_TESTING_GUIDE.md` + `requests/*.http` (auth, appointments, telemetry,
+    webhooks, errors) — request bodies generated from the committed OpenAPI so they match the real API.
+  - Diagrams: `appointments-api/docs/DIAGRAMS.md` (appointment state machine, auth + refresh-rotation
+    flow, excursion engine + links to telemetry/CI/contract diagrams); excursion state machine added to
+    the device `HARDWARE_TESTING.md`. All Mermaid, no external image service.
+  - `docs/GATES_VERIFIED.md` (meta repo): the §13 "break four things" run for real, output captured —
+    exclusion constraint → unit metadata test fails; OpenAPI field rename → contract drift fails; ARIA
+    label (and its `title` fallback) removed → axe `button-name` critical ×2 (dashboard light+dark);
+    CRC disabled → register-level test fails. Restored; gates green again. Finding: the in-process ASGI
+    concurrent double-booking test doesn't itself depend on the DB constraint (event loop serializes the
+    gathered requests) — worth strengthening to two real connections.
+  - Removed dead `appointments-web/src/routes/ComingSoon.tsx` (m12 placeholder superseded by m13); web
+    lint/typecheck/build green. Top-level README rewritten as the portfolio front door with real
+    screenshots (`docs/screenshots/`, the committed visual baselines) + a "what each repo teaches"
+    table + a "built with Claude Code" note; API README status un-staled.
+  - Verified: API unit-metadata + contract-drift (4 passed), device crc+faults (19 passed), web
+    lint+typecheck+build all green after restoring the four breaks; clean-clone bootstrap re-verified.
+  - Remaining is portfolio publishing only (personal public repos, history scrub, live-dashboard GIF) —
+    HANDOVER.md §7. Not a build milestone.

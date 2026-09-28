@@ -75,7 +75,7 @@ Work in batches of one or two milestones. Commit after each. Keep `PLAN.md` upda
 Update this section as you go, so any future session (or account) knows the state.
 
 - [x] Milestone 1 — scaffolding, three repos, CI skeleton
-- [~] Milestone 2–7 — API: domain, surface, advanced semantics, tests, CI/CD, contract
+- [x] Milestone 2–7 — API: domain, surface, advanced semantics, tests, CI/CD, contract
       (2 done: domain core; 3 done: API surface — auth+RBAC+CRUD+availability, problem+json,
       cursor pagination, 20 integration tests on testcontainers; 4 done: idempotency, ETag/If-Match,
       rate limiting, signed webhooks + retrying worker — 83 unit + 36 integration green;
@@ -104,8 +104,15 @@ Update this section as you go, so any future session (or account) knows the stat
       refresh-on-401, drift gate), auth flow (RHF+Zod, protected + role-guarded routes, TanStack
       Query), four-state primitives + `QueryBoundary`, layout shell, typed MSW mocks, 33 tests,
       Storybook 9 + a11y. ADRs 0002–0004. Verified green; pushed to `evg-g/appointments-web`.
-- [ ] Milestone 13–15 — web: features, tests, CI/CD (next)
-- [ ] Milestone 16 — docs, exercises, diagrams, polish
+- [x] Milestone 13–15 — web: features (calendar, booking, admin, audit, cold-chain dashboard),
+      test tiers (Vitest+MSW, Playwright E2E, axe, visual, Lighthouse/bundle budgets), and CI/CD
+      (composed-stack E2E + delivery pipeline). Pushed to `evg-g/appointments-web`.
+- [x] Milestone 16 — docs, exercises, diagrams, polish. EXERCISES.md in all three repos (26
+      break-it exercises); appointments-api API_TESTING_GUIDE.md + runnable requests/*.http; the
+      missing Mermaid diagrams (appointment & excursion state machines, auth flow) in
+      appointments-api/docs/DIAGRAMS.md + device HARDWARE_TESTING.md; the §13 "break four things" run
+      for real and recorded in docs/GATES_VERIFIED.md; dead ComingSoon.tsx removed; top-level README
+      rewritten as the portfolio front door with real screenshots. **Build complete — all 16 done.**
 
 The authoritative, up-to-date state lives in `~/aurora/PLAN.md` (in WSL). Read that first.
 
@@ -127,11 +134,11 @@ Before publishing to a personal GitHub account:
 
 - [ ] Personal account, MIT license, public repos
 - [ ] No employer name, internal hostnames, certificates, proxy config, or private data — in the code **or** in the git history
-- [ ] Top-level `README.md` with an architecture diagram, screenshots, and a short GIF of the live dashboard
+- [~] Top-level `README.md` with an architecture diagram + screenshots (done — `docs/screenshots/`, the committed visual baselines); a short **GIF of the live dashboard is still to record**
 - [ ] CI badges green on all three repos
-- [ ] Clean, conventional commit history
-- [ ] ADRs present and readable — the decisions are the portfolio, more than the code
-- [ ] Stated openly that the project was built using Claude Code as the working environment
+- [x] Clean, conventional commit history
+- [x] ADRs present and readable — the decisions are the portfolio, more than the code
+- [x] Stated openly that the project was built using Claude Code as the working environment (top-level README)
 - [ ] You can personally explain, without notes: why the exclusion constraint lives in the database, why fakes instead of mocks, what breaks when the OpenAPI contract drifts, and why the excursion timer must not use the real clock
 
 Work through `docs/EXERCISES.md` and break things on purpose before publishing. If you can predict which gate fails and why, the project is genuinely yours.
