@@ -91,9 +91,15 @@ Update this section as you go, so any future session (or account) knows the stat
       serial (pyserial loop://+pty) tiers, full fault catalogue (NaN/disk-full/clock-jump), agent run
       loop, seven-day soak (fake clock + tracemalloc, DST crossing). 173 tests + 5 hardware-skipped,
       ruff + mypy --strict clean, 97% coverage. ADRs 0003–0004.
-- [ ] Milestone 10–11 — device/API: ingestion (API MQTT/HTTP, server excursion engine, SSE,
-      telemetry contract), SIL + CI/CD
-- [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD
+- [x] Milestone 10 — API telemetry ingestion: MQTT worker + HTTP batch, idempotency by
+      (device_id, sequence), out-of-order/backfill, clock-skew, server-side excursion engine sharing
+      fixtures with the device, SSE stream, device-owned telemetry contract vendored + drift-gated.
+- [x] Milestone 11 — device SIL + CI/CD: real MQTT (QoS 1) + HTTP-fallback transports; device-side
+      telemetry-contract self-test + drift gate; fleet simulator + fleet.yaml; signed Ed25519 OTA
+      manifest verified before apply; staged rollout (canary→10%→fleet) with auto-halt; SIL tier
+      (agent vs Mosquitto + the API image in testcontainers — green against Docker); .deb packaging +
+      gateway image; matrix CI + nightly (soak, flake) + hil gated off. ADRs 0005–0007.
+- [ ] Milestone 12–15 — web: foundation, features, tests, CI/CD (next)
 - [ ] Milestone 16 — docs, exercises, diagrams, polish
 
 The authoritative, up-to-date state lives in `~/aurora/PLAN.md` (in WSL). Read that first.

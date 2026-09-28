@@ -7,12 +7,40 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 11 — device SIL + CI/CD** (work is in `aurora-sensor-agent`): the agent vs
-Mosquitto + API in testcontainers, a fleet simulator, matrix CI, packaging (wheel + .deb/gateway
-image), a signed OTA update manifest the agent verifies, a staged rollout (canary → 10% → fleet) with
-auto-halt on rising error rate, nightly soak, and the `hil` job gated off. Also wire the device-side
-telemetry-contract self-test + drift gate into the device CI (the API half is done — see below).
-Milestones 1–10 are done and committed.
+**Next milestone: 12 — web foundation** (work moves to `appointments-web`): design tokens, layout
+shell, the generated API client (from `appointments-api/contracts/openapi.json`), the auth flow,
+four-state primitives, and Storybook. The two backend/device repos are complete through milestone 11.
+
+Milestone 11 delivered (done, in `aurora-sensor-agent`): device SIL + CI/CD.
+- Real transports behind the `Transport` seam: `transport/mqtt.py` (paho v2, QoS 1, waits for PUBACK
+  so a failure surfaces synchronously and the agent buffers+retries), `transport/http.py` (httpx,
+  posts the batch envelope to `POST /devices/{id}/telemetry:batch` with `X-Device-Secret`),
+  `transport/fallback.py` (MQTT primary → HTTP fallback, same idempotency key on either path).
+- Device-side telemetry-contract self-test (`tests/contract/`) + drift gate (`scripts/check_contract.py`,
+  checksums + cross-repo byte-compare vs the API's vendored copy) — the API's reverse gate mirrored.
+- `fleet/`: a `fleet.yaml` schema, a fleet simulator (`VirtualClock` + `SimUplink`, N real agents on
+  seeded sim sensors), and `StagedRollout` (canary → 10% → fleet, auto-halt when a cohort's error rate
+  rises past the policy). `ota.py` verifies a signed Ed25519 manifest (signature → artifact hash/size →
+  version direction) before applying; `scripts/{gen_ota_key,build_ota_manifest}.py` sign/verify; no
+  keys committed.
+- **SIL** (`tests/sil/`, marked `sil`): testcontainers brings up Postgres+Redis+Mosquitto+the
+  appointments-api image (HTTP) + its MQTT worker; the agent's real HTTP and MQTT transports are driven
+  end to end and read back via the API time-series. Verified green against real Docker (2 passed).
+  hil (`tests/hil/`) is deselected + hardware-guarded.
+- CI: `ci.yml` gains contract, sil (builds the API image when `API_REPO` is set), and package (wheel +
+  .deb + signed OTA manifest) jobs; matrix excludes sil. `nightly.yml` = soak + x3 flake + gated hil.
+  actionlint clean. Packaging: `scripts/build_deb.sh` vendors the agent + deps into a .deb; enhanced
+  gateway image. ADRs 0005–0007; docs CI_CD / PACKAGING / OTA_ROLLOUT / KNOWN_GAPS; HARDWARE_TESTING
+  extended.
+- Verified: ruff + mypy --strict clean (98 files); 236 passed / 5 skipped / 4 deselected on the
+  non-Docker gate; `make sil` green against Docker; `make deb` builds the package; `make ota-demo`
+  and `make fleet`/`rollout` run. New deps: paho-mqtt, httpx, cryptography, PyYAML (runtime);
+  jsonschema, testcontainers, types-PyYAML, types-jsonschema (dev).
+- Deviations (see `aurora-sensor-agent/docs/KNOWN_GAPS.md`): SIL needs Docker + the built API image;
+  the MQTT path trusts the broker topic/ACL (no per-message secret, matching the API worker); the .deb
+  is arch-specific + Python-3.12-only (compiled deps); a 4xx from HTTP is raised+logged but retried.
+
+Milestones 1–11 are done and committed.
 
 What milestone 10 delivered (done, in `appointments-api`): telemetry ingestion end-to-end.
 - Models + migration 0003: `Device` (per-device Argon2 secret, status), `TelemetryReading`
@@ -156,7 +184,7 @@ all pass.
 - [x] 8. Device foundation: protocols, SHT4x register-level driver, CRC, simulator, driver contract suite.
 - [x] 9. Device behaviour: excursion state machine, filtering, store-and-forward buffer, batching, backoff, GPIO/serial tiers, fault injection, soak tests.
 - [x] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
-- [ ] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
+- [x] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
 - [ ] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
 - [ ] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
 - [ ] 14. Web test suites: unit, component+MSW, Playwright E2E, axe, visual, Lighthouse budgets.
@@ -354,3 +382,37 @@ all pass.
   - Deviations (docs/KNOWN_GAPS.md): full-series re-derivation per batch (bounded window is the
     follow-up); SSE bearer auth (EventSource transport is milestone 12); future reading is a per-item
     `rejected`, not a top-level 422 (bulk endpoint); device-side contract self-test is milestone 11.
+- 2026-09-28: Milestone 11 complete (`aurora-sensor-agent`). Device SIL + CI/CD, verified:
+  - Real transports behind the `Transport` seam: MqttTransport (paho v2, QoS 1, waits for PUBACK →
+    failures surface synchronously so the agent buffers+retries; paho client injected for tests),
+    HttpTransport (httpx → `POST /devices/{id}/telemetry:batch` with `X-Device-Secret`; 5xx/429/network
+    raise for retry, 4xx raised+logged), FallbackTransport (MQTT primary → HTTP fallback, same
+    idempotency key). Unit-tested with a fake paho client + httpx MockTransport (no network).
+  - Telemetry-contract self-test (`tests/contract/`, builds a real batch and validates it against the
+    owned schema; proves strictness + the N-1 rule) and the owner-side drift gate
+    (`scripts/check_contract.py`, checksums + cross-repo compare vs the API's vendored copy) —
+    `make contract-check`, wired into `ci-local` and a CI `contract` job.
+  - `fleet/`: `fleet.yaml` schema (devices, fault profiles, cohorts), a fleet simulator (real agents
+    on a `VirtualClock` + seeded sim sensors + `SimUplink`), and `StagedRollout` (canary → 10% → fleet,
+    auto-halt when a cohort's error rate rises past the policy). `ota.py` verifies a signed Ed25519
+    manifest (signature → artifact hash/size → version direction) before applying;
+    `scripts/{gen_ota_key,build_ota_manifest,derive_ota_pubkey}.py` sign/verify; no keys committed
+    (`keys/` gitignored). CLI `aurora-agent fleet|rollout`; `make fleet|rollout|ota-demo`.
+  - SIL (`tests/sil/`, marked `sil`): testcontainers → Postgres+Redis+Mosquitto+the appointments-api
+    image (HTTP) + a second container running its MQTT worker; the agent's real HTTP and MQTT transports
+    drive telemetry end to end, read back via the API time-series. Green against real Docker (2 passed);
+    skips cleanly when Docker/image absent. hil (`tests/hil/`) deselected + hardware-guarded, wiring
+    documented; nightly hil job gated behind `HIL_ENABLED` on a self-hosted runner.
+  - CI: `ci.yml` = lint, typecheck, test matrix (3.12/3.13, excludes hil+sil), contract, sil (builds the
+    API image when `API_REPO` set, else the tests skip), package (wheel + .deb + signed OTA manifest,
+    uploads artifacts). `nightly.yml` = soak + x3 flake + gated hil. actionlint clean
+    (`.github/actionlint.yaml` declares the custom runner label). Packaging: `scripts/build_deb.sh`
+    vendors the agent + deps under `/opt/aurora-sensor-agent/lib` (no network at install) + a hardened
+    systemd unit; enhanced gateway image (OCI labels, fleet default CMD). ADRs 0005–0007; docs
+    CI_CD / PACKAGING / OTA_ROLLOUT / KNOWN_GAPS; HARDWARE_TESTING extended.
+  - Verified: ruff + ruff format + mypy --strict clean (98 files); 236 passed / 5 skipped / 4 deselected
+    on `pytest -m "not hil and not sil"`; `make sil` = 2 passed against Docker; `make deb` builds
+    `dist/aurora-sensor-agent_0.1.0_amd64.deb`; `make ota-demo`, `make fleet`, `make rollout` run green.
+    New deps: paho-mqtt, httpx, cryptography, PyYAML (runtime); jsonschema, testcontainers, types-PyYAML,
+    types-jsonschema (dev). A real bug surfaced: the local `appointments-api:local` image was stale
+    (pre-milestone-10, no MQTT worker module) — rebuilt from current source before SIL passed.
