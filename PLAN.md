@@ -7,14 +7,45 @@ Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for c
 
 ## ▶ RESUME HERE (read this first after /clear)
 
-**Next milestone: 13 — web features** (in `appointments-web`): calendar/week view, booking flow
-(service → clinician → slot → confirm) with optimistic updates + rollback, appointment detail +
-state transitions, admin views (clinics/clinicians/services), an audit-log table with server-side
-pagination + filters, a settings page, and the cold-chain dashboard (live SSE charts, device health
-tiles, excursion timeline + acknowledge, threshold editor). The foundation (milestone 12) is done:
-tokens, theming, the generated API client, the auth flow, four-state primitives, layout, and
-Storybook are all in place and green. Read `appointments-web/CLAUDE.md` and recall memory
+**Next milestone: 14 — web test suites** (in `appointments-web`): Playwright E2E against the composed
+stack (login, book, reschedule, cancel, authz denial, error path), `@axe-core/playwright` +
+Storybook a11y in CI, visual regression (Playwright screenshots, light + dark), and Lighthouse
+performance budgets (LCP/CLS/TBT + bundle size) — plus the bundle code-splitting the budgets require
+(the app is currently one ~650 kB chunk; see `appointments-web/docs/KNOWN_GAPS.md`). Milestone 13
+already added a full Vitest unit+component suite (73 tests) and MSW four-state coverage; milestone 14
+is the browser-level tiers on top. Read `appointments-web/CLAUDE.md` and recall memory
 `aurora-build-environment` first.
+
+Milestone 13 delivered (done, in `appointments-web` + a small `appointments-api` addition): web features.
+- **Feature slices** under `src/features/` (appointments, calendar, admin, settings, cold-chain);
+  thin route files in `src/routes/` compose them. Data layer: per-domain hooks in `src/api/hooks/`
+  over the generated `openapi-fetch` client, a central query-key factory (`src/api/query-keys.ts`),
+  and cursor pagination via `useInfiniteQuery` ("load more"). ADR 0005.
+- **Booking flow**: clinic → service → clinician → day/slot → confirm, with a client `Idempotency-Key`
+  (stable per slot), an **optimistic insert with rollback** on 409/422/network. **Appointment detail**:
+  status transitions + cancellation guarded by **ETag/If-Match** (stale → clean 412 surfaced).
+- **Calendar/week view**: seven day-columns each fetching availability; collapses to an agenda stack
+  under `md`. **Admin**: clinics + per-clinic services/clinicians (RHF+Zod create forms with field-level
+  problem+json mapping) + **audit log** (server-side pagination + filters).
+- **Cold-chain dashboard**: live SSE temperature chart (bearer-auth `fetch`+ReadableStream reader with
+  `Last-Event-ID` — closes the m12 EventSource-auth gap; pure frame parser in `src/api/sse.ts`), a
+  **dependency-free token-themed inline-SVG chart**, device health tiles (polled 15s), excursion
+  timeline + acknowledge, threshold editor (previews the safe band).
+- **Contract-driven audit log**: added admin-only `GET /api/v1/audit-log` to **appointments-api**
+  (keyset pagination + actor/action/entity filters, `AuditLogEntryOut`, `AuditLogRepository`), regen +
+  vendored the contract, built the web page on the generated client. ADR 0015 (API) + ADR 0005 (web).
+  **The `audit_log` table has no write call sites yet** — the endpoint reads empty in prod until a
+  domain audit-writer is added (KNOWN_GAPS, both repos); the web MSW mock seeds rows so it's demoable.
+- **New primitives**: Select, Textarea, Table set (`src/components/ui/`) + stories; TemperatureChart
+  story. MSW backend made stateful (`src/mocks/db.ts`) so bookings/transitions/acks/pagination are real.
+- Verified: web — prettier + eslint + `tsc --strict` + `vite build` clean; **73 Vitest tests** (unit:
+  datetime/units/sse-parser/status; component+MSW four-state: booking happy+409, detail transition/
+  cancel/412, admin clinics+audit, cold-chain ack+error+empty); `build:storybook` OK; client drift
+  gate green. api — ruff + mypy --strict (142 files) clean; contract drift test green (regenerated
+  openapi.json); 6 new audit-log integration tests pass; coverage gate 95.38% line / 86.64% branch.
+- Deviations (see both repos' KNOWN_GAPS): audit write instrumentation deferred (backend follow-up);
+  bundle not code-split (~650 kB, budgets = m14); MSW-in-Storybook still deferred; threshold editor is
+  create-only (no GET policy in contract); settings profile read-only (no update-user endpoint).
 
 Milestone 12 delivered (done, in `appointments-web`): web foundation.
 - **Design tokens first** (`src/styles/tokens.css`): two layers — primitive scales + semantic
@@ -224,7 +255,7 @@ all pass.
 - [x] 10. Telemetry ingestion in the API: MQTT worker + HTTP batch, idempotency, out-of-order/backfill, clock-skew, server-side excursion engine, SSE, telemetry contract.
 - [x] 11. Device SIL + CI/CD: agent vs Mosquitto+API in testcontainers, fleet simulator, matrix CI, packaging, signed OTA manifest, staged rollout, nightly soak, hil gated off.
 - [x] 12. Web foundation: design tokens, layout shell, generated API client, auth flow, four-state primitives, Storybook.
-- [ ] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
+- [x] 13. Web features: calendar, booking flow, admin views, audit log, settings, cold-chain dashboard.
 - [ ] 14. Web test suites: unit, component+MSW, Playwright E2E, axe, visual, Lighthouse budgets.
 - [ ] 15. Web CI/CD complete, including E2E against the composed stack + fleet simulator.
 - [ ] 16. Documentation, exercises, diagrams, final polish.
@@ -477,3 +508,24 @@ all pass.
   - Deviations (`appointments-web/docs/KNOWN_GAPS.md`): localStorage token storage (XSS tradeoff,
     BFF is the follow-up); reactive-only refresh; bundle not code-split (budgets = milestone 14);
     MSW-in-Storybook + SSE EventSource auth deferred to milestone 13.
+- 2026-09-28: Milestone 13 complete (`appointments-web`, plus a read-only endpoint in
+  `appointments-api`). Web features built and verified:
+  - Feature slices (`src/features/`: appointments, calendar, admin, settings, cold-chain) composed by
+    thin `src/routes/` files; per-domain query/mutation hooks (`src/api/hooks/`) over the generated
+    client, a query-key factory, and cursor pagination via `useInfiniteQuery`.
+  - Booking flow (clinic→service→clinician→slot→confirm) with an `Idempotency-Key` + optimistic insert
+    and rollback; appointment detail with ETag/If-Match transitions + cancel (412 on stale); week
+    calendar (agenda on small screens); admin clinics/services/clinicians (RHF+Zod, problem+json field
+    mapping) + audit log (server pagination + filters); settings; cold-chain dashboard (SSE-over-fetch
+    live chart with Last-Event-ID, inline-SVG token-themed chart, health tiles, excursion ack,
+    threshold editor). New primitives: Select, Textarea, Table (+ stories). MSW backend made stateful
+    (`src/mocks/db.ts`). ADR 0005.
+  - Contract-driven audit log: added admin-only `GET /api/v1/audit-log` (keyset pagination + filters,
+    `AuditLogEntryOut`/`AuditLogRepository`) to the API; regenerated + vendored the contract; ADR 0015.
+    The `audit_log` table still has no writers (documented gap in both repos) — reads empty in prod,
+    seeded in the web mock.
+  - Verified: web — prettier + eslint + tsc + vite build clean; 73 Vitest tests (was 33); build:storybook
+    OK; client drift gate green. api — ruff + mypy --strict (142 files) clean; contract drift green;
+    6 audit-log integration tests pass; coverage gate 95.38%/86.64% on services+api.
+  - Deviations: audit write instrumentation, bundle code-splitting (m14 budgets), MSW-in-Storybook,
+    create-only threshold editor, read-only profile.
