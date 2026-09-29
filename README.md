@@ -23,14 +23,17 @@ telemetry schema), so each can be built, tested, and deployed on its own.
 
 ## What it looks like
 
-| Booking dashboard | Booking flow |
-|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Booking](docs/screenshots/booking.png) |
-| **Admin** | **Login** |
-| ![Admin](docs/screenshots/admin.png) | ![Login](docs/screenshots/login.png) |
+![Cold-chain dashboard: live fridge temperature with an excursion above the safe band](docs/screenshots/cold-chain.png)
 
-<sub>These are the committed Playwright visual-regression baselines (light theme) — the real rendered
-pages, not mockups. A dark theme ships too.</sub>
+| Dashboard | Appointments |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Appointments](docs/screenshots/appointments.png) |
+| **Booking — pick a time** | **Admin — audit log** |
+| ![Booking](docs/screenshots/booking.png) | ![Audit log](docs/screenshots/admin.png) |
+
+<sub>Real rendered pages from the production build with its mock backend and a demo dataset,
+captured by Playwright (`npm run screenshots` in appointments-web). Dark theme:
+[cold chain (dark)](docs/screenshots/cold-chain-dark.png).</sub>
 
 ## The three repos
 
