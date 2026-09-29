@@ -44,7 +44,7 @@ milestone 2 (an overlapping insert is rejected; a cancelled overlap is allowed).
 Net: the gate that reliably catches "the constraint is gone" is the model-metadata unit test. The
 concurrent integration test documents intent but, on its own, does not depend on the DB constraint —
 worth knowing, and a candidate to strengthen (drive it through two real connections). See
-[ADR 0002](../appointments-api/docs/adr/0002-prevent-double-booking-with-a-postgres-exclusion-constraint.md).
+[ADR 0002](https://github.com/evg-g/appointments-api/blob/main/docs/adr/0002-prevent-double-booking-with-a-postgres-exclusion-constraint.md).
 
 ## 2. Rename an OpenAPI response field
 
@@ -65,7 +65,7 @@ tests/contract/test_openapi_drift.py:39: AssertionError
 The served schema no longer matches the committed `contracts/openapi.json`. In CI this also drives the
 `oasdiff` breaking-change gate (a removed/renamed response field is breaking) and, downstream, the web
 repo's generated-client drift gate. See
-[CONTRACT_WORKFLOW.md](../appointments-api/docs/CONTRACT_WORKFLOW.md).
+[CONTRACT_WORKFLOW.md](https://github.com/evg-g/appointments-api/blob/main/docs/CONTRACT_WORKFLOW.md).
 
 ## 3. Remove a required ARIA label
 
@@ -93,7 +93,7 @@ button-name (impact: critical) — tags: wcag2a, wcag412, cat.name-role-value
 ```
 
 A screen-reader user hears "button" with no idea what it does — a critical WCAG 2.2 name-role-value
-failure, caught before it could ship. See [ADR 0006](../appointments-web/docs/adr/0006-browser-test-tiers.md).
+failure, caught before it could ship. See [ADR 0006](https://github.com/evg-g/appointments-web/blob/main/docs/adr/0006-browser-test-tiers.md).
 
 ## 4. Disable CRC validation in the sensor driver
 
@@ -112,7 +112,7 @@ tests/unit/sim/test_faults.py:37: Failed
 Without the CRC check a line glitch turns into a believed (wrong) temperature, which becomes a false
 excursion — or a missed one. The register-level fault test injects a bad CRC and expects the driver to
 raise. Runs on a bare laptop, no hardware. See
-[ADR 0002](../aurora-sensor-agent/docs/adr/0002-sht4x-register-level-driver-and-sim-replay.md).
+[ADR 0002](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/adr/0002-sht4x-register-level-driver-and-sim-replay.md).
 
 ---
 
