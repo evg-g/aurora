@@ -1,5 +1,15 @@
 # Aurora Clinic
 
+[![api ci](https://github.com/evg-g/appointments-api/actions/workflows/ci.yml/badge.svg)](https://github.com/evg-g/appointments-api/actions/workflows/ci.yml)
+[![web ci](https://github.com/evg-g/appointments-web/actions/workflows/ci.yml/badge.svg)](https://github.com/evg-g/appointments-web/actions/workflows/ci.yml)
+[![device ci](https://github.com/evg-g/aurora-sensor-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/evg-g/aurora-sensor-agent/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
+**In short:** a full product in three repos — a FastAPI backend, a React front end, and a Python IoT
+sensor agent — built to show professional **test automation** (unit → integration → contract →
+property → security → E2E → a11y → visual → load) and **CI/CD** (quality gates, scanning, signed
+images, OIDC deploys). Every test tier runs in CI, and the design decisions are written up as ADRs.
+
 A reference-grade learning system: **multi-clinic appointment scheduling** with **medication
 cold-chain monitoring**. It exists to be read and extended as a way to learn REST API design,
 automated testing at every layer, CI/CD, a professional UI, and Python on the device side.
@@ -26,11 +36,11 @@ pages, not mockups. A dark theme ships too.</sub>
 
 | Repo | What it is | Stack |
 |---|---|---|
-| [`appointments-api`](./appointments-api) | The backend: scheduling + telemetry ingestion | Python 3.12, FastAPI, PostgreSQL, Redis |
-| [`appointments-web`](./appointments-web) | The web app: booking, admin, cold-chain dashboard | React 19, TypeScript, Vite |
-| [`aurora-sensor-agent`](./aurora-sensor-agent) | The device agent on a fridge sensor node | Python 3.12, MQTT, SQLite buffer |
+| [`appointments-api`](https://github.com/evg-g/appointments-api) | The backend: scheduling + telemetry ingestion | Python 3.12, FastAPI, PostgreSQL, Redis |
+| [`appointments-web`](https://github.com/evg-g/appointments-web) | The web app: booking, admin, cold-chain dashboard | React 19, TypeScript, Vite |
+| [`aurora-sensor-agent`](https://github.com/evg-g/aurora-sensor-agent) | The device agent on a fridge sensor node | Python 3.12, MQTT, SQLite buffer |
 
-Start with each repo's `README.md` and `CLAUDE.md`. Build history lives in [`PLAN.md`](./PLAN.md).
+Start with each repo's `README.md` and `CLAUDE.md`. Build history lives in [`docs/process/PLAN.md`](./docs/process/PLAN.md).
 
 ## Status
 
@@ -86,7 +96,7 @@ flowchart LR
 
 More diagrams — the appointment and excursion state machines, the auth flow, the telemetry data path,
 the CI/CD pipeline, and the contract flow — are collected in
-[`appointments-api/docs/DIAGRAMS.md`](./appointments-api/docs/DIAGRAMS.md).
+[`appointments-api/docs/DIAGRAMS.md`](https://github.com/evg-g/appointments-api/blob/main/docs/DIAGRAMS.md).
 
 ## Contracts (how the repos stay in sync)
 
@@ -97,24 +107,24 @@ the CI/CD pipeline, and the contract flow — are collected in
 - `aurora-sensor-agent` owns the telemetry contract (`contracts/telemetry.schema.json` +
   AsyncAPI). The API vendors it and validates every inbound message; its CI fails on drift.
 
-See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](./appointments-api/docs/CONTRACT_WORKFLOW.md).
+See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appointments-api/blob/main/docs/CONTRACT_WORKFLOW.md).
 
 ## What each repo teaches
 
 | Area | Where | What you learn |
 |---|---|---|
-| REST API design | `appointments-api` | resource modelling, RFC 9457 errors, cursor pagination, idempotency, ETag/If-Match |
-| API testing pyramid | `appointments-api/docs/TESTING.md` | unit vs integration vs contract vs property vs security; fakes vs mocks vs stubs vs spies; why coverage is a weak signal |
-| Testing by topic | `appointments-api/docs/API_TESTING_GUIDE.md` + `requests/*.http` | how to test auth, pagination, idempotency, concurrency, DST, webhooks, errors — with hand-runnable requests |
-| Try the API by hand | `appointments-api/README.md` → *Try the API by hand* | Swagger UI (`/docs`), ReDoc, `.http` files in VS Code, and importing the OpenAPI spec into Postman |
-| Concurrency in the DB | `appointments-api` | why the no-double-booking rule lives in a Postgres exclusion constraint, not the app |
-| Time & DST | `appointments-api` | booking in a clinic's timezone with an injected clock |
-| CI/CD | each repo's `docs/CI_CD.md` | quality gates, containerization, scanning, signing, OIDC deploys that skip cleanly without secrets |
-| Contract-driven repos | `docs/CONTRACT_WORKFLOW.md` | OpenAPI + telemetry schemas as the seam; drift and breaking-change gates in both directions |
-| Professional UI | `appointments-web` | design tokens, four async states, WCAG 2.2 AA, performance budgets |
-| Frontend testing | `appointments-web/docs/BROWSER_TESTING.md` | MSW at the network layer, Playwright E2E, axe, visual regression, Lighthouse |
-| Hardware without hardware | `aurora-sensor-agent/docs/HARDWARE_TESTING.md` | Protocol seams, register-level + CRC tests, sim/replay, fault injection, soak with a fake clock |
-| Device delivery | `aurora-sensor-agent/docs/{PACKAGING,OTA_ROLLOUT}.md` | .deb packaging, a signed OTA manifest, and a staged rollout with auto-halt |
+| REST API design | [`appointments-api`](https://github.com/evg-g/appointments-api) | resource modelling, RFC 9457 errors, cursor pagination, idempotency, ETag/If-Match |
+| API testing pyramid | [`appointments-api/docs/TESTING.md`](https://github.com/evg-g/appointments-api/blob/main/docs/TESTING.md) | unit vs integration vs contract vs property vs security; fakes vs mocks vs stubs vs spies; why coverage is a weak signal |
+| Testing by topic | [`appointments-api/docs/API_TESTING_GUIDE.md`](https://github.com/evg-g/appointments-api/blob/main/docs/API_TESTING_GUIDE.md) + [`requests/*.http`](https://github.com/evg-g/appointments-api/tree/main/requests) | how to test auth, pagination, idempotency, concurrency, DST, webhooks, errors — with hand-runnable requests |
+| Try the API by hand | [`appointments-api/README.md` → *Try the API by hand*](https://github.com/evg-g/appointments-api#try-the-api-by-hand) | Swagger UI (`/docs`), ReDoc, `.http` files in VS Code, and importing the OpenAPI spec into Postman |
+| Concurrency in the DB | [`appointments-api`](https://github.com/evg-g/appointments-api) | why the no-double-booking rule lives in a Postgres exclusion constraint, not the app |
+| Time & DST | [`appointments-api`](https://github.com/evg-g/appointments-api) | booking in a clinic's timezone with an injected clock |
+| CI/CD | [`api`](https://github.com/evg-g/appointments-api/blob/main/docs/CI_CD.md) · [`web`](https://github.com/evg-g/appointments-web/blob/main/docs/CI_CD.md) · [`device`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/CI_CD.md) | quality gates, containerization, scanning, signing, OIDC deploys that skip cleanly without secrets |
+| Contract-driven repos | [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appointments-api/blob/main/docs/CONTRACT_WORKFLOW.md) | OpenAPI + telemetry schemas as the seam; drift and breaking-change gates in both directions |
+| Professional UI | [`appointments-web`](https://github.com/evg-g/appointments-web) | design tokens, four async states, WCAG 2.2 AA, performance budgets |
+| Frontend testing | [`appointments-web/docs/BROWSER_TESTING.md`](https://github.com/evg-g/appointments-web/blob/main/docs/BROWSER_TESTING.md) | MSW at the network layer, Playwright E2E, axe, visual regression, Lighthouse |
+| Hardware without hardware | [`aurora-sensor-agent/docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | Protocol seams, register-level + CRC tests, sim/replay, fault injection, soak with a fake clock |
+| Device delivery | [`PACKAGING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/PACKAGING.md) · [`OTA_ROLLOUT.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/OTA_ROLLOUT.md) | .deb packaging, a signed OTA manifest, and a staged rollout with auto-halt |
 
 ## Learn by breaking it
 
@@ -122,9 +132,9 @@ The fastest way to trust a safety net is to cut a hole in it and watch the alarm
 `docs/EXERCISES.md` with break-it-on-purpose exercises (26 in total) — make the change, predict which
 gate fails, run it, confirm:
 
-- [`appointments-api/docs/EXERCISES.md`](./appointments-api/docs/EXERCISES.md)
-- [`appointments-web/docs/EXERCISES.md`](./appointments-web/docs/EXERCISES.md)
-- [`aurora-sensor-agent/docs/EXERCISES.md`](./aurora-sensor-agent/docs/EXERCISES.md)
+- [`appointments-api/docs/EXERCISES.md`](https://github.com/evg-g/appointments-api/blob/main/docs/EXERCISES.md)
+- [`appointments-web/docs/EXERCISES.md`](https://github.com/evg-g/appointments-web/blob/main/docs/EXERCISES.md)
+- [`aurora-sensor-agent/docs/EXERCISES.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/EXERCISES.md)
 
 Four of them were run for real and the failing gates recorded in
 [`docs/GATES_VERIFIED.md`](./docs/GATES_VERIFIED.md).
@@ -134,7 +144,11 @@ Four of them were run for real and the failing gates recorded in
 Each repo bootstraps with one command from a clean shell:
 
 ```bash
-# WSL (Ubuntu-24.04)
+# WSL (Ubuntu-24.04) — clone the three repos side by side
+git clone https://github.com/evg-g/appointments-api.git
+git clone https://github.com/evg-g/appointments-web.git
+git clone https://github.com/evg-g/aurora-sensor-agent.git
+
 cd appointments-api      && make setup && make dev        # backend on :8000
 cd appointments-web      && make setup && make dev        # web on :5173
 cd aurora-sensor-agent   && make setup && make ci-local   # device: lint + types + contract + tests
@@ -158,8 +172,8 @@ Behind a TLS-inspecting corporate proxy, see each repo's `docs/CORPORATE_NETWORK
 `docs/BROWSER_TESTING.md`. On a clean network none of that is needed.
 
 Restoring the whole project on a new or formatted machine (toolchain, auth, clone layout, proxy and
-test-tier setup): [`RECOVERY.md`](./RECOVERY.md).
+test-tier setup): [`docs/process/RECOVERY.md`](./docs/process/RECOVERY.md).
 
 ## License
 
-MIT — each repo carries its own `LICENSE`.
+MIT — see [`LICENSE`](./LICENSE); each code repo carries its own copy.
