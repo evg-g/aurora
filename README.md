@@ -106,6 +106,7 @@ See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](./appointments-api/docs/CONTR
 | REST API design | `appointments-api` | resource modelling, RFC 9457 errors, cursor pagination, idempotency, ETag/If-Match |
 | API testing pyramid | `appointments-api/docs/TESTING.md` | unit vs integration vs contract vs property vs security; fakes vs mocks vs stubs vs spies; why coverage is a weak signal |
 | Testing by topic | `appointments-api/docs/API_TESTING_GUIDE.md` + `requests/*.http` | how to test auth, pagination, idempotency, concurrency, DST, webhooks, errors — with hand-runnable requests |
+| Try the API by hand | `appointments-api/README.md` → *Try the API by hand* | Swagger UI (`/docs`), ReDoc, `.http` files in VS Code, and importing the OpenAPI spec into Postman |
 | Concurrency in the DB | `appointments-api` | why the no-double-booking rule lives in a Postgres exclusion constraint, not the app |
 | Time & DST | `appointments-api` | booking in a clinic's timezone with an injected clock |
 | CI/CD | each repo's `docs/CI_CD.md` | quality gates, containerization, scanning, signing, OIDC deploys that skip cleanly without secrets |
