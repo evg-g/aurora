@@ -35,7 +35,7 @@ no real backend, the app runs on its mock API) · [latest Playwright test report
 | Load | Locust, p95 latency gate | [api `tests/load`](https://github.com/evg-g/appointments-api/tree/main/tests/load) | ✅ nightly |
 | Device without hardware | simulator, trace replay, fault injection, 7-day soak on a fake clock | [device `docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | ✅ |
 
-Current numbers: API 386 tests, 91% coverage, 79% mutation kill rate · web 76 unit/component
+Current numbers: API 386 tests, 91% coverage, 79% mutation kill rate · web 83 unit/component
 tests, 44 browser tests on Chromium and 34 on WebKit · device 236 tests.
 
 ## Bugs the gates caught
@@ -48,6 +48,7 @@ Real failures, each fixed with a test or gate that now stops it from coming back
 | New telemetry code lowered test strength: mutation kill rate 77.97% (< 78%) | nightly mutation gate | [tests that pin the excursion rules → 79.19%](https://github.com/evg-g/appointments-api/commit/a23249d) |
 | Header labels wrapped onto two lines at 1280px — and the visual baselines had recorded it as correct | a new layout test (failed at 1024/1280/1440px) | [layout fix + test](https://github.com/evg-g/appointments-web/commit/41299b2) |
 | Dashboard listed the latest booking first, not the soonest | review of the demo screenshots | [fix + unit tests](https://github.com/evg-g/appointments-web/commit/87850cc) |
+| With more than five future bookings, the dashboard showed the furthest-out ones (it fetched the 5 newest, then sorted) | a richer demo dataset + screenshot review; the visual test missed it (under its 2% diff limit) | [fix + a test that fails on the old code](https://github.com/evg-g/appointments-web/commit/dbda243) |
 | Component tests failed only when the machine was busy | reproduced by saturating every CPU core | [timeouts fixed; 4/4 green under load](https://github.com/evg-g/appointments-web/commit/1c63e53) |
 | The secret scan failed on every pull request (missing token permission) | CI on Dependabot PRs | [api](https://github.com/evg-g/appointments-api/commit/f71293a) · [web](https://github.com/evg-g/appointments-web/commit/e065eee) |
 | Audit-log text failed WCAG AA contrast (4.08:1) | axe accessibility sweep | [ADR 0006](https://github.com/evg-g/appointments-web/blob/main/docs/adr/0006-browser-test-tiers.md) |
@@ -89,7 +90,25 @@ captured by Playwright (`npm run screenshots` in appointments-web). Dark theme:
 
 Start with each repo's `README.md` and `CLAUDE.md`. Build history lives in [`docs/process/PLAN.md`](./docs/process/PLAN.md).
 
-## What is in it
+## Break it on purpose
+
+The fastest way to trust a safety net is to cut a hole in it and watch the alarm. Each repo has a
+`docs/EXERCISES.md` with break-it-on-purpose exercises (26 in total) — make the change, predict which
+gate fails, run it, confirm:
+
+- [`appointments-api/docs/EXERCISES.md`](https://github.com/evg-g/appointments-api/blob/main/docs/EXERCISES.md)
+- [`appointments-web/docs/EXERCISES.md`](https://github.com/evg-g/appointments-web/blob/main/docs/EXERCISES.md)
+- [`aurora-sensor-agent/docs/EXERCISES.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/EXERCISES.md)
+
+Four of them were run for real and the failing gates recorded in
+[`docs/GATES_VERIFIED.md`](./docs/GATES_VERIFIED.md).
+
+## More detail
+
+Reference material, collapsed so the page stays short. Click a heading to open it.
+
+<details>
+<summary><b>What is in it</b></summary>
 
 **v1.0.0**, feature-complete ([api release](https://github.com/evg-g/appointments-api/releases/tag/v1.0.0) · [web release](https://github.com/evg-g/appointments-web/releases/tag/v1.0.0)). Highlights:
 
@@ -107,7 +126,10 @@ Start with each repo's `README.md` and `CLAUDE.md`. Build history lives in [`doc
 - **CI/CD** — all three repos build, scan (Trivy/gitleaks/CodeQL/SBOM), sign (cosign), and deploy
   (Azure Container Apps via OIDC), with every cloud step gated so a fork stays green with zero secrets.
 
-## How they fit together
+</details>
+
+<details>
+<summary><b>How they fit together</b></summary>
 
 ```mermaid
 flowchart LR
@@ -145,7 +167,10 @@ More diagrams — the appointment and excursion state machines, the auth flow, t
 the CI/CD pipeline, and the contract flow — are collected in
 [`appointments-api/docs/DIAGRAMS.md`](https://github.com/evg-g/appointments-api/blob/main/docs/DIAGRAMS.md).
 
-## Contracts (how the repos stay in sync)
+</details>
+
+<details>
+<summary><b>Contracts (how the repos stay in sync)</b></summary>
 
 - `appointments-api` publishes `contracts/openapi.json`. A CI job (`oasdiff`) fails a PR on a
   breaking change unless it is labelled and the version is bumped.
@@ -156,7 +181,10 @@ the CI/CD pipeline, and the contract flow — are collected in
 
 See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appointments-api/blob/main/docs/CONTRACT_WORKFLOW.md).
 
-## Deep dives by topic
+</details>
+
+<details>
+<summary><b>Deep dives by topic</b></summary>
 
 | Area | Where | What it covers |
 |---|---|---|
@@ -173,20 +201,10 @@ See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appo
 | Hardware without hardware | [`aurora-sensor-agent/docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | Protocol seams, register-level + CRC tests, sim/replay, fault injection, soak with a fake clock |
 | Device delivery | [`PACKAGING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/PACKAGING.md) · [`OTA_ROLLOUT.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/OTA_ROLLOUT.md) | .deb packaging, a signed OTA manifest, and a staged rollout with auto-halt |
 
-## Break it on purpose
+</details>
 
-The fastest way to trust a safety net is to cut a hole in it and watch the alarm. Each repo has a
-`docs/EXERCISES.md` with break-it-on-purpose exercises (26 in total) — make the change, predict which
-gate fails, run it, confirm:
-
-- [`appointments-api/docs/EXERCISES.md`](https://github.com/evg-g/appointments-api/blob/main/docs/EXERCISES.md)
-- [`appointments-web/docs/EXERCISES.md`](https://github.com/evg-g/appointments-web/blob/main/docs/EXERCISES.md)
-- [`aurora-sensor-agent/docs/EXERCISES.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/EXERCISES.md)
-
-Four of them were run for real and the failing gates recorded in
-[`docs/GATES_VERIFIED.md`](./docs/GATES_VERIFIED.md).
-
-## Running it
+<details>
+<summary><b>Running it</b></summary>
 
 Each repo bootstraps with one command from a clean shell:
 
@@ -220,6 +238,8 @@ Behind a TLS-inspecting corporate proxy, see each repo's `docs/CORPORATE_NETWORK
 
 Restoring the whole project on a new or formatted machine (toolchain, auth, clone layout, proxy and
 test-tier setup): [`docs/process/RECOVERY.md`](./docs/process/RECOVERY.md).
+
+</details>
 
 ## License
 
