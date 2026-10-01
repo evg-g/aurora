@@ -35,7 +35,7 @@ no real backend, the app runs on its mock API) · [latest Playwright test report
 | Load | Locust, p95 latency gate | [api `tests/load`](https://github.com/evg-g/appointments-api/tree/main/tests/load) | ✅ nightly |
 | Device without hardware | simulator, trace replay, fault injection, 7-day soak on a fake clock | [device `docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | ✅ |
 
-Current numbers: API 386 tests, 91% coverage, 79% mutation kill rate · web 83 unit/component
+Current numbers: API 388 tests, 91% coverage, 79% mutation kill rate · web 83 unit/component
 tests, 44 browser tests on Chromium and 34 on WebKit · device 236 tests.
 
 ## Bugs the gates caught
@@ -49,6 +49,7 @@ Real failures, each fixed with a test or gate that now stops it from coming back
 | Header labels wrapped onto two lines at 1280px — and the visual baselines had recorded it as correct | a new layout test (failed at 1024/1280/1440px) | [layout fix + test](https://github.com/evg-g/appointments-web/commit/41299b2) |
 | Dashboard listed the latest booking first, not the soonest | review of the demo screenshots | [fix + unit tests](https://github.com/evg-g/appointments-web/commit/87850cc) |
 | With more than five future bookings, the dashboard showed the furthest-out ones (it fetched the 5 newest, then sorted) | a richer demo dataset + screenshot review; the visual test missed it (under its 2% diff limit) | [fix + a test that fails on the old code](https://github.com/evg-g/appointments-web/commit/dbda243) |
+| Our own release automation broke the API contract gate: release-please bumped the version, but the committed OpenAPI file kept the old one, so `main` went red | the contract drift test + coverage gate in CI (found while verifying the whole project) | [gate ignores only the version, 2 tests prove it](https://github.com/evg-g/appointments-api/commit/bdb9f75) |
 | Component tests failed only when the machine was busy | reproduced by saturating every CPU core | [timeouts fixed; 4/4 green under load](https://github.com/evg-g/appointments-web/commit/1c63e53) |
 | The secret scan failed on every pull request (missing token permission) | CI on Dependabot PRs | [api](https://github.com/evg-g/appointments-api/commit/f71293a) · [web](https://github.com/evg-g/appointments-web/commit/e065eee) |
 | Audit-log text failed WCAG AA contrast (4.08:1) | axe accessibility sweep | [ADR 0006](https://github.com/evg-g/appointments-web/blob/main/docs/adr/0006-browser-test-tiers.md) |
