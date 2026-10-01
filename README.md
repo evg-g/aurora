@@ -18,6 +18,32 @@ no real backend, the app runs on its mock API) · [latest Playwright test report
 [browser testing](https://github.com/evg-g/appointments-web/blob/main/docs/BROWSER_TESTING.md), or
 [hardware-free device testing](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md).
 
+## My role
+
+I'm a senior QA engineer. I use AI to create, manage, and run automated tests. Aurora is where I
+show how I do that across a full system: an API, a web app, and an IoT device agent, with every
+test tier gated in CI.
+
+I used Claude Code to write most of the code and tests. My job was to decide what to build and what
+to test, check every result, and never accept "it works" without proof:
+
+- **I tested it the way a user would.** I ran the accessibility suite myself in headed and debug
+  mode. I also asked whether a visitor could test the API by hand, which led to the Swagger
+  "Authorize" button and a hands-on guide.
+- **I pushed back when it was not good enough.** The app felt empty to me, which led to a real
+  cold-chain card, fuller demo data, and names in the audit log. The richer data then exposed a bug
+  the visual tests had missed.
+- **I asked for a full re-check before release.** It found that our own release automation had
+  broken the API contract gate, that new CVEs had appeared in two container images, and that a
+  local build could copy a private signing key into the device image. All are now fixed, with a
+  test or a scan that guards each one.
+- **I built a reusable QA toolkit.** It is a Claude Code skill that writes Playwright tests from a
+  user story, plus a tester agent and a separate read-only reviewer agent. It works on any project
+  through one facts file each: [qa-ai-toolkit](https://github.com/evg-g/qa-ai-toolkit).
+
+What I took from it: AI writes code fast, but it does not know what "done" means for your users.
+The tests, and my reviews of them, are what make this project trustworthy.
+
 ## Test automation at a glance
 
 | Layer | Tools | Where | Gate in CI |
