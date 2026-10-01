@@ -5,8 +5,8 @@
 [![device ci](https://github.com/evg-g/aurora-sensor-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/evg-g/aurora-sensor-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-A clinic booking system with live monitoring of medication fridges, built as **three repos** — a
-FastAPI backend, a React web app, and a Python IoT sensor agent — to show **test automation and
+A clinic booking system with live monitoring of medication fridges, built as **three repos**: a
+FastAPI backend, a React web app, and a Python IoT sensor agent. It shows **test automation and
 CI/CD** at a professional level. Every test tier below runs in CI and fails the build when it breaks.
 
 **Try it in the browser:** [live demo](https://evg-g.github.io/appointments-web/) (sign in as `admin@aurora.test` / `password123`;
@@ -27,7 +27,7 @@ test tier gated in CI.
 I used Claude Code to write most of the code and tests. My job was to decide what to build and what
 to test, check every result, and never accept "it works" without proof:
 
-- **I tested it the way a user would.** I ran the accessibility suite myself in headed and debug
+- **I tested it the way an end user would.** I ran the accessibility suite myself in headed and debug
   mode. I also asked whether a visitor could test the API by hand, which led to the Swagger
   "Authorize" button and a hands-on guide.
 - **I pushed back when it was not good enough.** The app felt empty to me, which led to a real
@@ -53,8 +53,8 @@ The tests, and my reviews of them, are what make this project trustworthy.
 | Contract (OpenAPI + telemetry schema) | drift tests, `oasdiff` breaking-change check | [api `tests/contract`](https://github.com/evg-g/appointments-api/tree/main/tests/contract) | ✅ |
 | Property-based / API fuzzing | Hypothesis, Schemathesis | [api `tests/property`](https://github.com/evg-g/appointments-api/tree/main/tests/property) | ✅ |
 | Mutation testing | mutmut, kill rate ≥ 78% | [api `docs/TESTING.md`](https://github.com/evg-g/appointments-api/blob/main/docs/TESTING.md) | ✅ nightly |
-| Security | authz matrix, JWT, injection tests; Trivy, gitleaks, pip/npm audit, CodeQL | [api `tests/security`](https://github.com/evg-g/appointments-api/tree/main/tests/security) | ✅ |
-| End-to-end | Playwright, Chromium + WebKit, network mocked with MSW | [web `e2e/journeys`](https://github.com/evg-g/appointments-web/tree/main/e2e/journeys) | ✅ |
+| Security | authz matrix, JWT, injection tests; Trivy (code + images), gitleaks, pip/npm audit, CodeQL | [api `tests/security`](https://github.com/evg-g/appointments-api/tree/main/tests/security) · [device `security` job](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/CI_CD.md) | ✅ |
+| End-to-end | Playwright, Chromium + WebKit, network mocked with MSW; story tests generated from user stories | [web `e2e/journeys`](https://github.com/evg-g/appointments-web/tree/main/e2e/journeys) · [`e2e/stories`](https://github.com/evg-g/appointments-web/tree/main/e2e/stories) | ✅ |
 | Accessibility (WCAG 2.2 AA) | axe, every route, light + dark | [web `e2e/a11y`](https://github.com/evg-g/appointments-web/tree/main/e2e/a11y) | ✅ |
 | Visual regression + layout rules | Playwright screenshots, layout assertions | [web `e2e/visual`](https://github.com/evg-g/appointments-web/tree/main/e2e/visual) | ✅ |
 | Performance | Lighthouse (LCP/CLS/TBT), bundle-size budget | [web `docs/BROWSER_TESTING.md`](https://github.com/evg-g/appointments-web/blob/main/docs/BROWSER_TESTING.md) | ✅ |
@@ -62,7 +62,7 @@ The tests, and my reviews of them, are what make this project trustworthy.
 | Device without hardware | simulator, trace replay, fault injection, 7-day soak on a fake clock | [device `docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | ✅ |
 
 Current numbers: API 388 tests, 91% coverage, 79% mutation kill rate · web 83 unit/component
-tests, 44 browser tests on Chromium and 34 on WebKit · device 236 tests.
+tests, 48 browser tests on Chromium and 38 on WebKit · device 236 tests.
 
 ## Bugs the gates caught
 
@@ -72,15 +72,18 @@ Real failures, each fixed with a test or gate that now stops it from coming back
 |---|---|---|
 | 43 HIGH/CRITICAL CVEs: Starlette (3) and the nginx base image (40) | Trivy in CI | [api](https://github.com/evg-g/appointments-api/commit/25d1c77) · [web](https://github.com/evg-g/appointments-web/commit/cd1b6db) |
 | New telemetry code lowered test strength: mutation kill rate 77.97% (< 78%) | nightly mutation gate | [tests that pin the excursion rules → 79.19%](https://github.com/evg-g/appointments-api/commit/a23249d) |
-| Header labels wrapped onto two lines at 1280px — and the visual baselines had recorded it as correct | a new layout test (failed at 1024/1280/1440px) | [layout fix + test](https://github.com/evg-g/appointments-web/commit/41299b2) |
+| Header labels wrapped onto two lines at 1280px, and the visual baselines had recorded it as correct | a new layout test (failed at 1024/1280/1440px) | [layout fix + test](https://github.com/evg-g/appointments-web/commit/41299b2) |
 | Dashboard listed the latest booking first, not the soonest | review of the demo screenshots | [fix + unit tests](https://github.com/evg-g/appointments-web/commit/87850cc) |
 | With more than five future bookings, the dashboard showed the furthest-out ones (it fetched the 5 newest, then sorted) | a richer demo dataset + screenshot review; the visual test missed it (under its 2% diff limit) | [fix + a test that fails on the old code](https://github.com/evg-g/appointments-web/commit/dbda243) |
 | Our own release automation broke the API contract gate: release-please bumped the version, but the committed OpenAPI file kept the old one, so `main` went red | the contract drift test + coverage gate in CI (found while verifying the whole project) | [gate ignores only the version, 2 tests prove it](https://github.com/evg-g/appointments-api/commit/bdb9f75) |
+| A local build could copy the device's private OTA signing key into the container image (no `.dockerignore`, and `COPY . .`) | a Trivy image scan during a full re-check (the device repo had no image scan) | [`.dockerignore`](https://github.com/evg-g/aurora-sensor-agent/commit/d4b6de0) + [a CI job that builds with a decoy key and fails if it reaches the image](https://github.com/evg-g/aurora-sensor-agent/commit/d901a24) |
+| 4 HIGH CVEs in the device's `cryptography` 44.0.3 (used to verify OTA signatures), never reported because nothing audited the device's dependencies | the same re-check | [upgrade to 50.0.2](https://github.com/evg-g/aurora-sensor-agent/commit/d4b6de0) + [pip-audit and image scan in device CI](https://github.com/evg-g/aurora-sensor-agent/commit/d901a24) |
+| 7 new HIGH OS CVEs (pcre2, openssl) in the API image, published after the last green build | Trivy image scan in CI | [upgrade OS packages at build time](https://github.com/evg-g/appointments-api/commit/0cccd43) |
 | Component tests failed only when the machine was busy | reproduced by saturating every CPU core | [timeouts fixed; 4/4 green under load](https://github.com/evg-g/appointments-web/commit/1c63e53) |
 | The secret scan failed on every pull request (missing token permission) | CI on Dependabot PRs | [api](https://github.com/evg-g/appointments-api/commit/f71293a) · [web](https://github.com/evg-g/appointments-web/commit/e065eee) |
 | Audit-log text failed WCAG AA contrast (4.08:1) | axe accessibility sweep | [ADR 0006](https://github.com/evg-g/appointments-web/blob/main/docs/adr/0006-browser-test-tiers.md) |
 
-Plus four deliberate "break it" checks — each break applied, the failing gate recorded, then reverted —
+Plus four deliberate "break it" checks (each break applied, the failing gate recorded, then reverted)
 in [`docs/GATES_VERIFIED.md`](docs/GATES_VERIFIED.md), including an honest finding: the concurrent
 double-booking integration test does not actually depend on the database constraint.
 
@@ -100,7 +103,7 @@ its own. The design decisions are written up as ADRs in each repo.
 | Dashboard | Appointments |
 |---|---|
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Appointments](docs/screenshots/appointments.png) |
-| **Booking — pick a time** | **Admin — audit log** |
+| **Booking: pick a time** | **Admin: audit log** |
 | ![Booking](docs/screenshots/booking.png) | ![Audit log](docs/screenshots/admin.png) |
 
 <sub>Real rendered pages from the production build with its mock backend and a demo dataset,
@@ -120,7 +123,7 @@ Start with each repo's `README.md` and `CLAUDE.md`. Build history lives in [`doc
 ## Break it on purpose
 
 The fastest way to trust a safety net is to cut a hole in it and watch the alarm. Each repo has a
-`docs/EXERCISES.md` with break-it-on-purpose exercises (26 in total) — make the change, predict which
+`docs/EXERCISES.md` with break-it-on-purpose exercises (26 in total): make the change, predict which
 gate fails, run it, confirm:
 
 - [`appointments-api/docs/EXERCISES.md`](https://github.com/evg-g/appointments-api/blob/main/docs/EXERCISES.md)
@@ -139,19 +142,21 @@ Reference material, collapsed so the page stays short. Click a heading to open i
 
 **v1.0.0**, feature-complete ([api release](https://github.com/evg-g/appointments-api/releases/tag/v1.0.0) · [web release](https://github.com/evg-g/appointments-web/releases/tag/v1.0.0)). Highlights:
 
-- **Backend** — full `/api/v1` surface with auth (JWT + refresh rotation), RBAC, RFC 9457 errors,
+- **Backend:** full `/api/v1` surface with auth (JWT + refresh rotation), RBAC, RFC 9457 errors,
   cursor pagination, idempotency, ETag/If-Match, rate limiting, signed webhooks, and telemetry
   ingestion (MQTT + HTTP, idempotent and order-independent) with a server-side excursion engine and an
   SSE stream. Unit / integration (testcontainers) / contract / property / security / load tiers, with
   enforced coverage and mutation gates.
-- **Web** — design-token UI (light/dark), a client generated from the OpenAPI schema, the booking flow,
+- **Web:** design-token UI (light/dark), a client generated from the OpenAPI schema, the booking flow,
   admin, audit log, and a live cold-chain dashboard. Vitest + MSW, Playwright E2E (MSW and the fully
   composed real stack), axe a11y, visual regression, and Lighthouse/bundle budgets.
-- **Device** — the SHT4x driver with CRC, real/sim/replay hardware seams behind Protocols, the
+- **Device:** the SHT4x driver with CRC, real/sim/replay hardware seams behind Protocols, the
   excursion state machine, a store-and-forward buffer, the full fault catalogue, a compressed seven-day
   soak, software-in-the-loop against a real broker + the API, a fleet simulator, and a signed OTA rollout.
-- **CI/CD** — all three repos build, scan (Trivy/gitleaks/CodeQL/SBOM), sign (cosign), and deploy
-  (Azure Container Apps via OIDC), with every cloud step gated so a fork stays green with zero secrets.
+- **CI/CD:** the API and the web app build, scan (Trivy/gitleaks/CodeQL/SBOM), sign (cosign), and
+  deploy (Azure Container Apps via OIDC), with every cloud step gated so a fork stays green with zero
+  secrets. The device agent builds a `.deb` and a signed OTA manifest, and its CI audits dependencies,
+  scans for secrets, and scans its container image.
 
 </details>
 
@@ -190,8 +195,8 @@ flowchart LR
     svc -->|"signed webhooks<br/>(HMAC-SHA256)"| hooks
 ```
 
-More diagrams — the appointment and excursion state machines, the auth flow, the telemetry data path,
-the CI/CD pipeline, and the contract flow — are collected in
+More diagrams (the appointment and excursion state machines, the auth flow, the telemetry data path,
+the CI/CD pipeline, and the contract flow) are collected in
 [`appointments-api/docs/DIAGRAMS.md`](https://github.com/evg-g/appointments-api/blob/main/docs/DIAGRAMS.md).
 
 </details>
@@ -217,7 +222,7 @@ See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appo
 |---|---|---|
 | REST API design | [`appointments-api`](https://github.com/evg-g/appointments-api) | resource modelling, RFC 9457 errors, cursor pagination, idempotency, ETag/If-Match |
 | API testing pyramid | [`appointments-api/docs/TESTING.md`](https://github.com/evg-g/appointments-api/blob/main/docs/TESTING.md) | unit vs integration vs contract vs property vs security; fakes vs mocks vs stubs vs spies; why coverage is a weak signal |
-| Testing by topic | [`appointments-api/docs/API_TESTING_GUIDE.md`](https://github.com/evg-g/appointments-api/blob/main/docs/API_TESTING_GUIDE.md) + [`requests/*.http`](https://github.com/evg-g/appointments-api/tree/main/requests) | how to test auth, pagination, idempotency, concurrency, DST, webhooks, errors — with hand-runnable requests |
+| Testing by topic | [`appointments-api/docs/API_TESTING_GUIDE.md`](https://github.com/evg-g/appointments-api/blob/main/docs/API_TESTING_GUIDE.md) + [`requests/*.http`](https://github.com/evg-g/appointments-api/tree/main/requests) | how to test auth, pagination, idempotency, concurrency, DST, webhooks, errors, with hand-runnable requests |
 | Try the API by hand | [`appointments-api/README.md` → *Try the API by hand*](https://github.com/evg-g/appointments-api#try-the-api-by-hand) | Swagger UI (`/docs`), ReDoc, `.http` files in VS Code, and importing the OpenAPI spec into Postman |
 | Concurrency in the DB | [`appointments-api`](https://github.com/evg-g/appointments-api) | why the no-double-booking rule lives in a Postgres exclusion constraint, not the app |
 | Time & DST | [`appointments-api`](https://github.com/evg-g/appointments-api) | booking in a clinic's timezone with an injected clock |
@@ -236,7 +241,7 @@ See [`appointments-api/docs/CONTRACT_WORKFLOW.md`](https://github.com/evg-g/appo
 Each repo bootstraps with one command from a clean shell:
 
 ```bash
-# WSL (Ubuntu-24.04) — clone the three repos side by side
+# WSL (Ubuntu-24.04): clone the three repos side by side
 git clone https://github.com/evg-g/appointments-api.git
 git clone https://github.com/evg-g/appointments-web.git
 git clone https://github.com/evg-g/aurora-sensor-agent.git
@@ -270,4 +275,4 @@ test-tier setup): [`docs/process/RECOVERY.md`](./docs/process/RECOVERY.md).
 
 ## License
 
-MIT — see [`LICENSE`](./LICENSE); each code repo carries its own copy.
+MIT, see [`LICENSE`](./LICENSE); each code repo carries its own copy.
