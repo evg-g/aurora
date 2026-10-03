@@ -11,5 +11,6 @@ between sessions and machines.
 | [`PLAN.md`](PLAN.md) | The build plan and progress log — all 16 milestones, what each delivered, and what was verified. |
 | [`HANDOVER.md`](HANDOVER.md) | Project context for picking the work up in a new session: goals, why this domain, the decisions already settled, and the bar the project was held to before publishing. |
 | [`RECOVERY.md`](RECOVERY.md) | How to restore the whole project on a new machine: toolchain, GitHub auth, clone layout, and setup. |
+| [`ADLC-SETUP.md`](ADLC-SETUP.md) | The build order for ADLC, the `/refine` → `/implement` proof loop now used for new work on Aurora. Written as instructions to an agent. |
 
 For the project itself, start at the [top-level README](../../README.md).
