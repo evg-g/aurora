@@ -10,7 +10,7 @@ FastAPI backend, a React web app, and a Python IoT sensor agent. It shows **test
 CI/CD** at a professional level. Every test tier below runs in CI and fails the build when it breaks.
 
 **Try it in the browser:** [live demo](https://evg-g.github.io/appointments-web/) (sign in as `admin@aurora.test` / `password123`;
-no real backend, the app runs on its mock API) · [latest Playwright test report](https://evg-g.github.io/appointments-web/report/)
+no real backend, the app runs on its mock API — the local stack seeds `admin@aurora-clinic.com` instead) · [latest Playwright test report](https://evg-g.github.io/appointments-web/report/)
 
 **Two-minute tour:** the [test tiers table](#test-automation-at-a-glance) → the
 [bugs the gates caught](#bugs-the-gates-caught) → one deep dive:
