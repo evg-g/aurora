@@ -14,6 +14,7 @@ Never edit the `adlc` machine block at the end of a ticket by hand. Re-run `/ref
 | Ticket | Status | Notes |
 |---|---|---|
 | [`AURORA-2`](AURORA-2.md) | `in-review` | Record an audit-log entry when an appointment is cancelled. The first ticket to go through ADLC; PR [appointments-api#19](https://github.com/evg-g/appointments-api/pull/19) ready for review, 3/3 criteria proven. |
+| [`AURORA-3`](AURORA-3.md) | `draft` | Do not report success when the database did not save the change. Found while proving AURORA-2; next is `/refine`. |
 
 `AURORA-1` predates this tracker and has no ticket file. It was the dashboard cold-chain card, and
 its tests were written with the toolkit's `e2e-test-generation` skill rather than through ADLC —
