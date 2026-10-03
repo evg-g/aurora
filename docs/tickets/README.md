@@ -8,3 +8,13 @@ This is Aurora's tracker for the ADLC loop:
 3. `/implement AURORA-<n>` — proves each criterion and opens one PR per repo.
 
 Never edit the `adlc` machine block at the end of a ticket by hand. Re-run `/refine`.
+
+## Tickets
+
+| Ticket | Status | Notes |
+|---|---|---|
+| [`AURORA-2`](AURORA-2.md) | `in-refinement` | Record an audit-log entry when an appointment is cancelled. The first ticket to go through ADLC; the product pass is done, the design pass is next. |
+
+`AURORA-1` predates this tracker and has no ticket file. It was the dashboard cold-chain card, and
+its tests were written with the toolkit's `e2e-test-generation` skill rather than through ADLC —
+see [`appointments-web/e2e/stories/AURORA-1/`](https://github.com/evg-g/appointments-web/tree/main/e2e/stories/AURORA-1).
