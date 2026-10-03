@@ -9,7 +9,7 @@ between sessions and machines.
 |---|---|
 | [`CLAUDE_CODE_BOOTSTRAP_PROMPT.md`](CLAUDE_CODE_BOOTSTRAP_PROMPT.md) | The original spec: the product, the three repos, the test tiers, CI/CD, and the milestone order. |
 | [`PLAN.md`](PLAN.md) | The build plan and progress log — all 16 milestones, what each delivered, and what was verified. |
-| [`HANDOVER.md`](HANDOVER.md) | Project context for picking the work up in a new session: goals, why this domain, decisions, and the portfolio checklist. |
+| [`HANDOVER.md`](HANDOVER.md) | Project context for picking the work up in a new session: goals, why this domain, the decisions already settled, and the bar the project was held to before publishing. |
 | [`RECOVERY.md`](RECOVERY.md) | How to restore the whole project on a new machine: toolchain, GitHub auth, clone layout, and setup. |
 
 For the project itself, start at the [top-level README](../../README.md).

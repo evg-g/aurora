@@ -1,14 +1,14 @@
 # Recovery — continue the build on a new/formatted machine
 
-This restores the whole Aurora project from the private GitHub backups and lets you pick up at the
-next milestone. Everything is under the personal account **evg-g**.
+This restores the whole Aurora project on a new machine and lets you pick the work up again.
+All four repos are public, under the personal account **evg-g**, so cloning needs no credentials —
+authentication is only needed to *push*.
 
 ## At a glance
 
 1. **Install the toolchain** — VS Code, Claude Code, WSL2 Ubuntu-24.04, Docker Desktop, and inside WSL
    `git`, `uv`, Node 20, Python 3.12, `make`/`gcc` (§0).
-2. **Authenticate to GitHub** — a PAT or an SSH key, **before** cloning; the repos are private and will
-   not clone without it (§1).
+2. **Authenticate to GitHub** — only if you intend to push. Cloning works without it (§1).
 3. **Clone** the meta repo and the three code repos inside it (§2).
 4. **Restore dependencies** — `make setup` / `npm ci` (§3).
 5. **Verify** — `make ci-local`, then `make test-integration` (§4).
@@ -27,17 +27,14 @@ Prerequisites Claude **cannot** do for you (its own runtime and anything needing
 Ubuntu-24.04, Docker Desktop, Claude Code, and `git` in WSL must already exist. Launch `claude` inside
 the WSL shell, then paste the prompt below with your token in place.
 
-Token safety: give the PAT **`repo` scope only**, and **revoke/rotate it after** the restore. To avoid
-pasting the token into the session at all, run `gh auth login` yourself first (`! gh auth login`) and
-drop step 1 from the prompt.
+The repos are public, so the prompt below needs no token. If you also want to push, run
+`gh auth login` yourself first (`! gh auth login` from inside the session) — never paste a token
+into a chat.
 
-> I'm restoring a project on a freshly formatted machine. Here is a GitHub Personal Access Token for my
-> private account **evg-g**: `<PASTE_TOKEN>`. Do this:
-> 1. Configure git to use it over HTTPS (store it in `~/.gh_personal` with the credential helper; do not
->    echo the token back).
-> 2. Clone `evg-g/aurora` into `~/aurora`, then clone `evg-g/appointments-api`,
+> I'm restoring a project on a freshly formatted machine. Do this:
+> 1. Clone `evg-g/aurora` into `~/aurora`, then clone `evg-g/appointments-api`,
 >    `evg-g/appointments-web`, and `evg-g/aurora-sensor-agent` inside `~/aurora`.
-> 3. Read `docs/process/RECOVERY.md`, `docs/process/HANDOVER.md`, and `docs/process/PLAN.md`, then follow RECOVERY.md to set this machine up —
+> 2. Read `docs/process/RECOVERY.md`, `docs/process/HANDOVER.md`, and `docs/process/PLAN.md`, then follow RECOVERY.md to set this machine up —
 >    run `make setup` in each repo and `make ci-local` to verify. Hand me any `sudo`/manual steps to run
 >    myself, and stop if a prerequisite (Docker, uv, Node, Python) is missing.
 
@@ -83,22 +80,21 @@ uv --version && node --version && python3 --version && git --version \
   && make --version && docker info | head -1
 ```
 
-## 1. Authenticate to GitHub (needed before cloning — the repos are private)
+## 1. Authenticate to GitHub (only needed to push)
 
-Create a Personal Access Token on **evg-g** with `repo` + `workflow` scope, then store it so git
-uses it over HTTPS:
+The repos are public, so §2 clones them with no credentials. Authenticate when you want to push:
 
 ```bash
-# WSL, token read silently
-read -s T && printf 'https://evg-g:%s@github.com\n' "$T" > ~/.gh_personal && chmod 600 ~/.gh_personal && unset T
-git config --global credential.helper "store --file ~/.gh_personal"
+gh auth login        # interactive; stores the token in the system credential store
 ```
 
-(Or set up an SSH key on evg-g and use the SSH clone URLs instead.)
+Or add an SSH key to the account and use the SSH clone URLs. Prefer either of these over writing a
+token into a file: `gh` and the SSH agent keep the secret out of your shell history and off disk in
+plaintext.
 
 ## 2. Clone the meta repo AS the project folder, then the code repos inside it
 
-**Do §1 (GitHub auth) first** — these are private repos and the clone fails without credentials.
+The repos are public, so these clones need no credentials. Do §1 only if you intend to push.
 
 ```bash
 cd ~

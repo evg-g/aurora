@@ -1,12 +1,15 @@
 # Aurora Clinic — Project Handover
 
-Portable context file. Upload this at the start of a new chat in a fresh Claude account, or keep it at the root of the project folder so Claude Code can read it. It replaces everything a previous account would have remembered.
+A build-time context file, kept as a record. It was written so a new Claude Code session could pick the
+project up with no prior memory: what the project is, which decisions were already settled, and how far
+the build had got. It is published as part of the build log, not as current documentation — for the state
+of the project today, start at the [top-level README](../../README.md).
 
 ---
 
 ## 1. What this project is
 
-A self-directed learning project built to reach professional level in API testing, CI/CD, automated testing, and Python on the device side — and to serve as a portfolio piece.
+A portfolio project showing test automation and CI/CD across a full system: an API, a web app, and an IoT device agent, with every automated test tier gated in CI. The one exception is the hardware-in-the-loop tier, which needs a real sensor attached and is deselected by default.
 
 **Product:** *Aurora Clinic* — appointment scheduling for a network of clinics, plus cold-chain monitoring of the medication/vaccine fridge in each clinic.
 
@@ -35,7 +38,7 @@ Not for the subject matter — for the problems it forces:
 ## 3. Key decisions already made (don't relitigate without a reason)
 
 1. **Three separate repos, not a monorepo** — the goal is practising independent pipelines and cross-repo contracts.
-2. **Contract-driven**: the API publishes `openapi.json`; the web app generates its client from it; the device owns an AsyncAPI + JSON Schema for MQTT. CI fails on drift in both directions.
+2. **Contract-driven**: the API publishes `openapi.json`; the web app generates its client from it; the device owns an AsyncAPI + JSON Schema for MQTT. Each side commits its copy of the other's contract, and a CI gate fails the build if that copy drifts — in both directions.
 3. **Real Postgres in integration tests** via testcontainers — no SQLite substitute, because the exclusion constraint is the point.
 4. **Unit tests use fakes over mocks**; mocks only for verifying outgoing interactions; `autospec` always.
 5. **Device hardware sits behind `typing.Protocol`** with three implementations: `real`, `sim` (with injectable faults), `replay`. One contract suite runs against all three.
@@ -56,8 +59,7 @@ Not for the subject matter — for the problems it forces:
 ```bash
 # WSL (Ubuntu-24.04)
 mkdir -p ~/aurora && cd ~/aurora
-cp /mnt/c/Users/<user>/Downloads/CLAUDE_CODE_BOOTSTRAP_PROMPT.md .
-cp /mnt/c/Users/<user>/Downloads/HANDOVER.md .
+# place CLAUDE_CODE_BOOTSTRAP_PROMPT.md and HANDOVER.md in this folder
 claude
 ```
 
@@ -114,11 +116,9 @@ Update this section as you go, so any future session (or account) knows the stat
       for real and recorded in docs/GATES_VERIFIED.md; dead ComingSoon.tsx removed; top-level README
       rewritten as the portfolio front door with real screenshots. **Build complete — all 16 done.**
 
-The authoritative, up-to-date state lives in `~/aurora/docs/process/PLAN.md` (in WSL). Read that first.
+The full build log, milestone by milestone, is in [`PLAN.md`](PLAN.md).
 
 Notes / deviations from the spec:
-
-> _(record anything that had to change, and why)_
 
 - Milestone 2 used **psycopg 3** (`postgresql+psycopg://`) as the single DB driver for both the
   async app and synchronous Alembic, instead of asyncpg + a separate sync driver. Reason: one
@@ -128,27 +128,32 @@ Notes / deviations from the spec:
   concurrency test for it is deferred to milestone 3's integration tier (testcontainers), as the
   build order intends.
 
-## 7. Portfolio checklist
+## 7. What was done before publishing
 
-Before publishing to a personal GitHub account:
+The bar the project was held to before it went public, and how each item was met:
 
-- [ ] Personal account, MIT license, public repos
-- [ ] No employer name, internal hostnames, certificates, proxy config, or private data — in the code **or** in the git history
-- [~] Top-level `README.md` with an architecture diagram + screenshots (done — `docs/screenshots/`, the committed visual baselines); a short **GIF of the live dashboard is still to record**
-- [ ] CI badges green on all three repos
-- [x] Clean, conventional commit history
-- [x] ADRs present and readable — the decisions are the portfolio, more than the code
-- [x] Stated openly that the project was built using Claude Code as the working environment (top-level README)
-- [ ] You can personally explain, without notes: why the exclusion constraint lives in the database, why fakes instead of mocks, what breaks when the OpenAPI contract drifts, and why the excursion timer must not use the real clock
+- **Personal account, MIT license, public repos.** All four repos are public under one MIT license.
+- **Nothing private in the code or the history.** No employer name, internal hostnames, certificates,
+  proxy config, or credentials — checked across tracked files and the full history.
+  `appointments-api/docs/CORPORATE_NETWORK.md` and the proxy notes in `RECOVERY.md` are written
+  generically, with placeholder hosts and paths.
+- **A front page a stranger can read.** The top-level `README.md` carries the architecture diagram and
+  real screenshots captured by Playwright from the production build (`docs/screenshots/`).
+- **Green CI on all three repos**, with the badges in the README pointing at the real workflows.
+- **Clean, conventional commit history.**
+- **ADRs present and readable** — the decisions are the portfolio, more than the code.
+- **The use of Claude Code stated openly** in the top-level README, along with what was delegated and
+  what was reviewed.
+- **The gates broken on purpose.** Each of the three code repos ships a `docs/EXERCISES.md`; four of those breaks were run
+  for real and the failing gate recorded in [`docs/GATES_VERIFIED.md`](../GATES_VERIFIED.md), including
+  a finding against the project's own tests.
 
-Work through `docs/EXERCISES.md` and break things on purpose before publishing. If you can predict which gate fails and why, the project is genuinely yours.
+## 8. How this file was used
 
-## 8. Starting a new chat with this file
-
-Open a new chat, attach this file, and say:
-
-> This is a project I'm building. Read the handover, then help me with <the specific task>.
-
-For a new Claude Code session in an existing project folder, just say:
+Each new Claude Code session in the project folder was opened with the same instruction, which is
+how the build survived being spread across many sessions with no shared memory:
 
 > Read docs/process/HANDOVER.md and docs/process/PLAN.md, then continue from the next unchecked milestone.
+
+All 16 milestones are now done, so there is no next one; the prompt is recorded here as part of the
+method, not as a step to run.

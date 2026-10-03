@@ -1,19 +1,15 @@
 # Aurora Clinic — Build Plan
 
-Reference-grade learning system: appointment scheduling + medication cold-chain monitoring,
-built as three independent repos. Source spec: `CLAUDE_CODE_BOOTSTRAP_PROMPT.md`.
+Appointment scheduling + medication cold-chain monitoring, built as three independent repos.
+Source spec: `CLAUDE_CODE_BOOTSTRAP_PROMPT.md`.
 
 Built inside WSL2 Ubuntu-24.04 at `~/aurora/`. See each repo's `CLAUDE.md` for conventions.
 
-## ▶ RESUME HERE (read this first after /clear)
+## Status
 
-**All 16 milestones are done and committed.** The build is complete. Recall memory
-`aurora-build-environment` before running anything in WSL.
-
-What remains is *portfolio publishing* (not a build milestone): create the personal public GitHub
-repos, scrub history for employer/proxy/cert data, and add a live-dashboard GIF. See HANDOVER.md §7
-(portfolio checklist) and docs/FIRST_PUSH.md in each repo. The screenshots in `docs/screenshots/` are
-the committed Playwright visual baselines and are ready to use.
+**All 16 milestones are done and committed.** The build is complete, and all four repos are
+published. Below: the milestone summaries, newest first, then a dated progress log in the order
+the work happened.
 
 Milestone 16 delivered (done, across all three repos + the meta repo): documentation, exercises,
 diagrams, final polish.
@@ -227,21 +223,16 @@ What milestone 10 delivered (done, in `appointments-api`): telemetry ingestion e
   self-test + drift gate deferred to milestone 11.
 
 Context for a fresh session:
-- Work happens in WSL2 Ubuntu-24.04 at `/home/evgenig/aurora/`. Edit files via the
-  `\\wsl.localhost\Ubuntu-24.04\home\evgenig\aurora\...` path; run commands with
-  `wsl -d Ubuntu-24.04 bash /path/to/script.sh`.
+- Work happens in WSL2 Ubuntu-24.04, with the project at `~/aurora/`.
 - WSL execution quirk: do NOT pass inline `$VAR`/`$(...)`/quotes/heredocs through
-  PowerShell→wsl (they get mangled). Write a script file with the Write tool, run it, read a
-  log file. Always `export HOME=/home/evgenig` (and source nvm for node) at the top of scripts.
-  Full details in memory `aurora-build-environment`.
+  PowerShell→wsl (they get mangled). Write a script file, run it, read a log file.
 - Tools ready: uv, Node 20 (nvm), Python 3.12, Docker (from WSL, `postgres:16` + `redis:7` images
-  pulled), make/gcc, git identity `evg-g`. sudo needs a password (hand to the user).
-- Milestones 1–7 are done and committed. API working tree clean. Backed up to private GitHub repos
-  under personal account `evg-g` (remotes set; `~/.gh_personal` holds the push token).
-- Backups: the three code repos push to `evg-g/<name>`. This PLAN.md and the top-level docs are
-  tracked in a 4th private repo **`evg-g/aurora`** (a git repo rooted at `~/aurora/` that ignores
-  the three code dirs). After updating PLAN.md at the end of a milestone, run `git -C ~/aurora push`
-  too, or the checklist/progress backup goes stale.
+  pulled), make/gcc. sudo needs a password (hand to the user).
+- Milestones 1–7 are done and committed. API working tree clean.
+- Layout: the three code repos each push to their own remote. This PLAN.md and the top-level docs
+  are tracked in a 4th repo, **`evg-g/aurora`** (rooted at `~/aurora/`, ignoring the three code
+  dirs). After updating PLAN.md at the end of a milestone, push that repo too, or the progress log
+  goes stale.
 
 What milestone 3 delivered (done):
 - FastAPI surface under `/api/v1`: auth (`/auth/login|refresh|logout|me`), users, clinics,
@@ -312,7 +303,7 @@ exit 0 on identical / exit 1 on a removed path. Web-side drift check is mileston
 AsyncAPI contract is milestone 10.
 
 First actions on resume: read this PLAN.md, then work in **`aurora-sensor-agent`** for milestone 11 —
-read its `CLAUDE.md`, recall memory `aurora-build-environment`. Milestone 11 (device SIL + CI/CD)
+read its `CLAUDE.md`. Milestone 11 (device SIL + CI/CD)
 needs Docker: testcontainers running Mosquitto + the API so the agent's MQTT publish path is exercised
 end-to-end against the milestone-10 ingestion. The device owns the telemetry contract at
 `aurora-sensor-agent/contracts/` (schema + AsyncAPI, added in milestone 10); wire its self-test +
@@ -679,5 +670,5 @@ all pass.
     table + a "built with Claude Code" note; API README status un-staled.
   - Verified: API unit-metadata + contract-drift (4 passed), device crc+faults (19 passed), web
     lint+typecheck+build all green after restoring the four breaks; clean-clone bootstrap re-verified.
-  - Remaining is portfolio publishing only (personal public repos, history scrub, live-dashboard GIF) —
-    HANDOVER.md §7. Not a build milestone.
+  - Publishing the repos was handled separately, outside the milestone sequence — see
+    HANDOVER.md §7.
