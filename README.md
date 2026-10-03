@@ -62,7 +62,8 @@ The tests, and my reviews of them, are what make this project trustworthy.
 | Device without hardware | simulator, trace replay, fault injection, 7-day soak on a fake clock | [device `docs/HARDWARE_TESTING.md`](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md) | ✅ |
 
 Current numbers: API 388 tests, 91% coverage, 79% mutation kill rate · web 83 unit/component
-tests, 48 browser tests on Chromium and 38 on WebKit · device 236 tests.
+tests, 48 browser tests on Chromium and 38 on WebKit · device 241 tests (plus 2 software-in-the-loop
+and 2 hardware-in-the-loop, which need Docker and a real sensor).
 
 ## Bugs the gates caught
 
@@ -140,7 +141,7 @@ Reference material, collapsed so the page stays short. Click a heading to open i
 <details>
 <summary><b>What is in it</b></summary>
 
-**v1.0.0**, feature-complete ([api release](https://github.com/evg-g/appointments-api/releases/tag/v1.0.0) · [web release](https://github.com/evg-g/appointments-web/releases/tag/v1.0.0)). Highlights:
+Feature-complete, released from `main` by release-please: [api v1.0.1](https://github.com/evg-g/appointments-api/releases/tag/v1.0.1) · [web v1.1.0](https://github.com/evg-g/appointments-web/releases/tag/v1.1.0). The device agent ships as a `.deb` package and a signed OTA manifest rather than a tagged release. Highlights:
 
 - **Backend:** full `/api/v1` surface with auth (JWT + refresh rotation), RBAC, RFC 9457 errors,
   cursor pagination, idempotency, ETag/If-Match, rate limiting, signed webhooks, and telemetry
