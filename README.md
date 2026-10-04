@@ -18,6 +18,8 @@ no real backend, the app runs on its mock API — the local stack seeds `admin@a
 [browser testing](https://github.com/evg-g/appointments-web/blob/main/docs/BROWSER_TESTING.md), or
 [hardware-free device testing](https://github.com/evg-g/aurora-sensor-agent/blob/main/docs/HARDWARE_TESTING.md).
 
+**One-page summary:** [portfolio PDF](docs/portfolio/Evgeni_Gavrilov_Aurora_Portfolio.pdf)
+
 ## My role
 
 I'm a senior QA engineer. For the past two years I have worked on **test automation**, and I use AI
