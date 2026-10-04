@@ -1,7 +1,7 @@
 ---
 key: "AURORA-3"
 title: "Do not report success when the database did not save the change"
-status: "in-review"
+status: "done"
 assignee: "evg-g"
 ---
 
