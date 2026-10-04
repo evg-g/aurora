@@ -1,7 +1,7 @@
 ---
 key: "AURORA-2"
 title: "Record an audit-log entry when an appointment is cancelled"
-status: "in-review"
+status: "done"
 assignee: "evg-g"
 ---
 
