@@ -20,9 +20,9 @@ no real backend, the app runs on its mock API — the local stack seeds `admin@a
 
 ## My role
 
-I'm a senior QA engineer. I use AI to create, manage, and run automated tests. Aurora is where I
-show how I do that across a full system: an API, a web app, and an IoT device agent, with every
-test tier gated in CI.
+I'm a senior QA engineer. For the past two years, I have used AI every day to write, maintain, and
+run automated tests. Aurora shows how I do this on a full system: an API, a web app, and an IoT
+device agent. Every level of testing runs in CI, and a change can't merge until it passes.
 
 I used Claude Code to write most of the code and tests. My job was to decide what to build and what
 to test, check every result, and never accept "it works" without proof:
