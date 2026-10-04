@@ -20,29 +20,28 @@ no real backend, the app runs on its mock API — the local stack seeds `admin@a
 
 ## My role
 
-I'm a senior QA engineer. For the past two years, I have used AI every day to write, maintain, and
-run automated tests. Aurora shows how I do this on a full system: an API, a web app, and an IoT
-device agent. Every level of testing runs in CI, and a change can't merge until it passes.
+I'm a senior QA engineer. For the past two years I have worked on **test automation**, and I use AI
+every day to write, maintain, and run automated tests. Aurora shows how I do this on a full system:
+an API, a web app, and an IoT device agent. Every level of testing runs in CI, and a change can't merge until it passes.
 
-I used Claude Code to write most of the code and tests. My job was to decide what to build and what
-to test, check every result, and never accept "it works" without proof:
+Claude Code wrote most of the code and tests. I decided what to build and what to test, and I
+checked every result myself. Some examples:
 
-- **I tested it the way an end user would.** I ran the accessibility suite myself in headed and debug
-  mode. I also asked whether a visitor could test the API by hand, which led to the Swagger
-  "Authorize" button and a hands-on guide.
-- **I pushed back when it was not good enough.** The app felt empty to me, which led to a real
-  cold-chain card, fuller demo data, and names in the audit log. The richer data then exposed a bug
-  the visual tests had missed.
-- **I asked for a full re-check before release.** It found that our own release automation had
-  broken the API contract gate, that new CVEs had appeared in two container images, and that a
-  local build could copy a private signing key into the device image. All are now fixed, with a
-  test or a scan that guards each one.
-- **I built a reusable QA toolkit.** It is a Claude Code skill that writes Playwright tests from a
-  user story, plus a tester agent and a separate read-only reviewer agent. It works on any project
-  through one facts file each: [qa-ai-toolkit](https://github.com/evg-g/qa-ai-toolkit).
+- I ran the accessibility tests myself in headed and debug mode, to see what a real user would see.
+  I also tried to test the API by hand the way a visitor would. That is why the Swagger page now has
+  an "Authorize" button and a short guide.
+- The first version of the app looked empty, so I asked for a real cold-chain card, more demo data,
+  and names in the audit log. The extra data showed a bug that the visual tests had missed.
+- Before the release I asked for a full re-check. It found three problems: our release automation
+  had broken the API contract check, two container images had new CVEs, and a local build could copy
+  a private signing key into the device image. All three are fixed, and each one now has a test or a
+  scan that would catch it again.
+- I also built a QA toolkit that I can reuse on other projects. It writes Playwright tests from a
+  user story, and it has a tester agent and a separate reviewer agent that can only read:
+  [qa-ai-toolkit](https://github.com/evg-g/qa-ai-toolkit).
 
-What I took from it: AI writes code fast, but it does not know what "done" means for your users.
-The tests, and my reviews of them, are what make this project trustworthy.
+AI is fast at writing code, but it doesn't know what "done" means for the people who use the
+product. That part is still my job.
 
 ## Test automation at a glance
 
