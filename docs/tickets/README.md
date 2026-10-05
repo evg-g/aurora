@@ -17,6 +17,8 @@ Never edit the `adlc` machine block at the end of a ticket by hand. Re-run `/ref
 | [`AURORA-3`](AURORA-3.md) | `done` | Do not report success when the database did not save the change. Merged as [appointments-api#20](https://github.com/evg-g/appointments-api/pull/20), 4/4 criteria proven. |
 | [`AURORA-5`](AURORA-5.md) | `draft` | Limit a patient to two appointments per day. The pilot for the QA stage: ADLC builds it, then the QA agents test it independently. |
 
+Bug fixes made outside ADLC have a short note here too: [booking time zone](BOOKING-TIMEZONE.md).
+
 `AURORA-1` predates this tracker and has no ticket file. It was the dashboard cold-chain card, and
 its tests were written with the toolkit's `e2e-test-generation` skill rather than through ADLC —
 see [`appointments-web/e2e/stories/AURORA-1/`](https://github.com/evg-g/appointments-web/tree/main/e2e/stories/AURORA-1).
