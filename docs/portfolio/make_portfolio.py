@@ -38,7 +38,8 @@ def rule():
 
 story = [
     Paragraph("Evgeni Gavrilov", name),
-    Paragraph("Senior QA Engineer &nbsp;·&nbsp; <b>test automation</b> with AI for the past two years", role),
+    Paragraph("Senior QA Engineer, in QA since 2015 &nbsp;·&nbsp; <b>test automation</b> with AI since 2023",
+              role),
     Spacer(1, 2),
     Paragraph(" &nbsp;·&nbsp; ".join(
         ["gavrilov.evgeni85@gmail.com"] + ([PHONE] if PHONE else [])
@@ -48,7 +49,9 @@ story = [
     Spacer(1, 4),
     Paragraph("Aurora: my portfolio project", h2),
     Paragraph(
-        "I use AI every day to write, maintain, and run automated tests. Aurora shows how I do this on a "
+        "I'm a senior QA engineer with over 10 years in QA (since 2015). Since 2023 I have focused on "
+        "<b>test automation</b>, and I use AI every day to write, maintain, and run automated tests. "
+        "Aurora shows how I do this on a "
         "full system: a small clinic app with a <b>FastAPI backend</b>, a <b>React web app</b>, and a "
         "<b>Python IoT agent</b> that watches medicine fridges. Every level of testing runs in CI, and a "
         "change can't merge until it passes. AI wrote most of the code; I decided what to test and checked "
