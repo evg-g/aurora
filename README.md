@@ -22,10 +22,10 @@ no real backend, the app runs on its mock API — the local stack seeds `admin@a
 
 ## My role
 
-I'm a senior QA engineer with over 10 years in QA (since 2015). Since 2023 I have focused on
-**test automation**, and I use AI every day to write, maintain, and run automated tests. Aurora
-shows how I do this on a full system: an API, a web app, and an IoT device agent. Every level of
-testing runs in CI, and a change can't merge until it passes.
+I'm a **QA & automation engineer** with over 10 years in QA (since 2015) and in **test automation**
+since 2023. I use AI every day to write, maintain, and run automated tests. Aurora shows how I do
+this on a full system: an API, a web app, and an IoT device agent. Every level of testing runs in
+CI, and a change can't merge until it passes.
 
 Claude Code wrote most of the code and tests. I decided what to build and what to test, and I
 checked every result myself. Some examples:
