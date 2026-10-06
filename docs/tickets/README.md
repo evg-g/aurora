@@ -18,6 +18,7 @@ Never edit the `adlc` machine block at the end of a ticket by hand. Re-run `/ref
 | [`AURORA-5`](AURORA-5.md) | `in-refinement` | Limit a patient to two appointments per day. `/refine` paused at Q3. |
 | [`AURORA-6`](AURORA-6.md) | `in-review` | Booking times stay in the clinic's time zone. Built outside ADLC (appointments-web#18); acceptance criteria added so the QA agents can test it. The first QA-stage pilot. |
 | [`AURORA-7`](AURORA-7.md) | `draft` | Bug from the AURORA-6 QA stage: time slots do not name the clinic's time zone. |
+| [`AURORA-8`](AURORA-8.md) | `ready-for-agent` | Appointments page: tabs, day groups and a clinic filter (appointments-web). ADLC-lite: criteria approved directly, no `/refine` interview. |
 
 Bug fixes made outside ADLC have a short note here too: [booking time zone](BOOKING-TIMEZONE.md).
 
